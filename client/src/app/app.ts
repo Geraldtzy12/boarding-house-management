@@ -1,12 +1,17 @@
-import { Component, signal } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { Component, inject, signal } from '@angular/core';
+import { RoomService } from './services/room.service';
+import { Room } from './models/room';
 
 @Component({
-  imports: [RouterOutlet],
   selector: 'app-root',
-  styleUrl: './app.css',
   templateUrl: './app.html',
+  styleUrl: './app.css'
 })
 export class App {
-  protected readonly title = signal('client');
+  private roomService = inject(RoomService);
+  rooms = signal<Room[]>([]);
+
+  constructor() {
+    this.roomService.getAll().subscribe(r => this.rooms.set(r));
+  }
 }
