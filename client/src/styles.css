@@ -1,1 +1,17 @@
-/* You can add global styles to this file, and also import other style files */
+body { font-family: system-ui, sans-serif; margin: 0; background: #f4f6f8; color: #1f2937; }
+.bar { display: flex; justify-content: space-between; align-items: center; padding: 16px 24px; background: #1f2d3d; color: #fff; }
+.bar h1 { margin: 0; font-size: 1.25rem; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; padding: 24px; }
+.card, .form { background: #fff; border-radius: 10px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+.card .top { display: flex; justify-content: space-between; align-items: center; }
+.card h3 { margin: 0; }
+.badge { padding: 2px 10px; border-radius: 999px; font-size: .75rem; background: #d1fae5; color: #065f46; }
+.badge.occupied { background: #fee2e2; color: #991b1b; }
+.actions { display: flex; gap: 8px; margin-top: 12px; }
+button { padding: 8px 14px; border: 0; border-radius: 6px; background: #2563eb; color: #fff; cursor: pointer; }
+button:disabled { opacity: .5; cursor: not-allowed; }
+button.danger { background: #dc2626; }
+.form { max-width: 360px; margin: 24px; display: grid; gap: 10px; }
+.form label { display: grid; gap: 4px; font-size: .9rem; }
+.form input, .form select { padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; }
+.error { color: #b91c1c; padding: 0 24px; }

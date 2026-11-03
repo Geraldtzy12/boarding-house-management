@@ -1,0 +1,12 @@
+<div class="card">
+  <div class="top">
+    <h3>Room {{ room().roomNo }}</h3>
+    <span class="badge" [class.occupied]="room().status === 'Occupied'">{{ room().status }}</span>
+  </div>
+  <p>{{ room().monthlyRate | currency:'PHP' }} / month</p>
+  <p>Capacity: {{ room().capacity }}</p>
+  <div class="actions">
+    <button (click)="edit.emit(room())">Edit</button>
+    <button class="danger" (click)="remove.emit(room().id)">Delete</button>
+  </div>
+</div>
