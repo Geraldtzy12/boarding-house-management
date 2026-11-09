@@ -44,13 +44,16 @@ public class RoomsController : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    public async Task<IActionResult> Delete(int id)
-    {
-        var room = await _db.Rooms.FindAsync(id);
-        if (room is null) return NotFound();
+public async Task<IActionResult> Delete(int id)
+{
+    var room = await _db.Rooms.FindAsync(id);
+    if (room is null) return NotFound();
 
-        _db.Rooms.Remove(room);
-        await _db.SaveChangesAsync();
-        return NoContent();
-    }
+    if (await _db.Tenants.AnyAsync(t => t.RoomId == id))
+        return Conflict("May tenant pa sa room na ito.");
+
+    _db.Rooms.Remove(room);
+    await _db.SaveChangesAsync();
+    return NoContent();
+}
 }
