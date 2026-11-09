@@ -1,7 +1,1 @@
-<header class="bar"><h1>Boarding House</h1></header>
-
-<div class="grid">
-  @for (r of rooms(); track r.id) {
-    <app-room-card [room]="r" (edit)="onEdit($event)" (remove)="onRemove($event)" />
-  }
-</div>
+<app-rooms-page />

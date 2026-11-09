@@ -1,0 +1,27 @@
+<form class="form" (ngSubmit)="submit()">
+  <h3>{{ room() ? 'Edit Room' : 'Add Room' }}</h3>
+
+  <label>Room No.
+    <input name="roomNo" [(ngModel)]="roomNo" />
+  </label>
+
+  <label>Monthly Rate (PHP)
+    <input name="monthlyRate" type="number" min="0" [(ngModel)]="monthlyRate" />
+  </label>
+
+  <label>Capacity
+    <input name="capacity" type="number" min="1" [(ngModel)]="capacity" />
+  </label>
+
+  <label>Status
+    <select name="status" [(ngModel)]="status">
+      <option value="Vacant">Vacant</option>
+      <option value="Occupied">Occupied</option>
+    </select>
+  </label>
+
+  <div class="actions">
+    <button type="submit" [disabled]="!canSave()">Save</button>
+    <button type="button" (click)="cancelled.emit()">Cancel</button>
+  </div>
+</form>
