@@ -1,0 +1,29 @@
+<form class="form" (ngSubmit)="submit()">
+  <h3>{{ tenant() ? 'Edit Tenant' : 'Add Tenant' }}</h3>
+
+  <label>Name
+    <input name="name" [(ngModel)]="name" />
+  </label>
+
+  <label>Contact
+    <input name="contact" [(ngModel)]="contact" />
+  </label>
+
+  <label>Room
+    <select name="roomId" [(ngModel)]="roomId">
+      <option [ngValue]="null">-- Walang room --</option>
+      @for (r of rooms(); track r.id) {
+        <option [ngValue]="r.id">Room {{ r.roomNo }} ({{ r.status }})</option>
+      }
+    </select>
+  </label>
+
+  <label>Lease start
+    <input name="leaseStart" type="date" [(ngModel)]="leaseStart" />
+  </label>
+
+  <div class="actions">
+    <button type="submit" [disabled]="!canSave()">Save</button>
+    <button type="button" (click)="cancelled.emit()">Cancel</button>
+  </div>
+</form>

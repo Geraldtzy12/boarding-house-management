@@ -1,0 +1,16 @@
+<div class="card">
+  <div class="top">
+    <h3>{{ tenant().name }}</h3>
+    @if (tenant().room; as room) {
+      <span class="badge">Room {{ room.roomNo }}</span>
+    } @else {
+      <span class="badge occupied">No room</span>
+    }
+  </div>
+  <p>Contact: {{ tenant().contact }}</p>
+  <p>Lease start: {{ tenant().leaseStart | date:'mediumDate' }}</p>
+  <div class="actions">
+    <button (click)="edit.emit(tenant())">Edit</button>
+    <button class="danger" (click)="moveOut.emit(tenant().id)">Move out</button>
+  </div>
+</div>

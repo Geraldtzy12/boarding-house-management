@@ -1,9 +1,9 @@
 import { Component } from '@angular/core';
-import { RoomsPage } from './pages/rooms-page/rooms-page';
+import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 
 @Component({
   selector: 'app-root',
-  imports: [RoomsPage],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive],
   templateUrl: './app.html',
   styleUrl: './app.css'
 })

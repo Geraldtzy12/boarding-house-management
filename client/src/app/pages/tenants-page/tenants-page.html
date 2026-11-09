@@ -1,0 +1,24 @@
+<div class="toolbar">
+  <h2>Tenants</h2>
+  <button (click)="onAddClick()">+ Add Tenant</button>
+</div>
+
+@if (error()) {
+  <p class="error">{{ error() }}</p>
+}
+
+@if (showForm()) {
+  <app-tenant-form
+    [tenant]="editing()"
+    [rooms]="rooms()"
+    (saved)="onSave($event)"
+    (cancelled)="onCancel()" />
+}
+
+<div class="grid">
+  @for (t of tenants(); track t.id) {
+    <app-tenant-card [tenant]="t" (edit)="onEdit($event)" (moveOut)="onMoveOut($event)" />
+  } @empty {
+    <p>Wala pang tenants. I-click ang "+ Add Tenant".</p>
+  }
+</div>
