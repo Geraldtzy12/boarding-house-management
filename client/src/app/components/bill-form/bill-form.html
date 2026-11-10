@@ -3,7 +3,7 @@
 
   <label>Tenant
     <select name="tenantId" [(ngModel)]="tenantId">
-      <option [ngValue]="null">-- Pumili ng tenant --</option>
+      <option [ngValue]="null">-- Choose a tenants --</option>
       @for (t of tenants(); track t.id) {
         <option [ngValue]="t.id">{{ t.name }} (Room {{ t.room?.roomNo }})</option>
       }
@@ -18,20 +18,22 @@
     </select>
   </label>
 
-  <label>Buwan
-    <input name="month" type="month" [(ngModel)]="month" />
-  </label>
+  <div class="field">
+    <span>Month</span>
+    <app-month-picker [(value)]="month" />
+  </div>
 
-  <label>Halaga (PHP)
+  <label>Amount (PHP)
     <input name="amount" type="number" min="0" [(ngModel)]="amount" />
   </label>
 
-  <label>Due date
-    <input name="dueDate" type="date" [(ngModel)]="dueDate" />
-  </label>
+  <div class="field">
+    <span>Due date</span>
+    <app-date-picker [(value)]="dueDate" />
+  </div>
 
   <label>Note (optional)
-    <input name="note" [(ngModel)]="note" placeholder="Halimbawa: Meter 1200 to 1285" />
+    <input name="note" [(ngModel)]="note" placeholder="Example: Meter 1200 to 1285" />
   </label>
 
   <div class="actions">

@@ -1,0 +1,43 @@
+<div class="picker">
+  <button type="button" class="field-btn" (click)="toggle()">
+    <span>{{ label() || placeholder() }}</span>
+    <span>📅</span>
+  </button>
+
+  @if (open()) {
+    <div class="calendar">
+      <div class="cal-head">
+        <button type="button" (click)="prev()" aria-label="Nakaraang buwan">‹</button>
+        <strong>{{ title() }}</strong>
+        <button type="button" (click)="next()" aria-label="Susunod na buwan">›</button>
+      </div>
+
+      <div class="cal-grid weekdays">
+        @for (w of weekdays; track w) {
+          <span>{{ w }}</span>
+        }
+      </div>
+
+      <div class="cal-grid">
+        @for (d of cells(); track $index) {
+          @if (d === null) {
+            <span></span>
+          } @else {
+            <button
+              type="button"
+              class="day"
+              [class.selected]="isSelected(d)"
+              [class.today]="isToday(d)"
+              (click)="select(d)">
+              {{ d }}
+            </button>
+          }
+        }
+      </div>
+
+      <div class="cal-foot">
+        <button type="button" class="link" (click)="pickToday()">Today</button>
+      </div>
+    </div>
+  }
+</div>

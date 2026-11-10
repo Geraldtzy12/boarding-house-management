@@ -1,6 +1,5 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { CurrencyPipe } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { BillService, BillPayload } from '../../services/bill.service';
 import { TenantService } from '../../services/tenant.service';
@@ -8,6 +7,7 @@ import { Bill, BillStatus, BillType } from '../../models/bill';
 import { Tenant } from '../../models/tenant';
 import { BillCard } from '../../components/bill-card/bill-card';
 import { BillForm } from '../../components/bill-form/bill-form';
+import { MonthPicker } from '../../components/month-picker/month-picker';
 
 function currentMonth(): string {
   const d = new Date();
@@ -16,7 +16,7 @@ function currentMonth(): string {
 
 @Component({
   selector: 'app-bills-page',
-  imports: [BillCard, BillForm, FormsModule, CurrencyPipe],
+  imports: [BillCard, BillForm, MonthPicker, CurrencyPipe],
   templateUrl: './bills-page.html',
   styleUrl: './bills-page.css'
 })
@@ -81,7 +81,7 @@ export class BillsPage {
     this.error.set('');
     this.billService.create(payload).subscribe({
       next: () => {
-        this.message.set('Naidagdag ang bill.');
+        this.message.set('bill has been added.');
         this.showForm.set(false);
         this.load();
       },

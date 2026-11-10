@@ -1,0 +1,13 @@
+:host { display: block; }
+.stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px;
+  background: #fff;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+}
+.stepper button { width: 44px; padding: 6px 0; font-size: 1.2rem; background: #e2e8f0; color: #0f172a; }
+.stepper button:hover:not(:disabled) { background: #cbd5e1; }
+.label { min-width: 160px; text-align: center; font-weight: 700; color: #0f172a; }

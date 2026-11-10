@@ -2,7 +2,7 @@
   <h2>Bills</h2>
   <div class="generate">
     <button (click)="onAddClick()">+ Add bill</button>
-    <input type="month" [(ngModel)]="month" />
+    <app-month-picker [(value)]="month" />
     <button (click)="onGenerate()" [disabled]="!month()">Generate rent bills</button>
   </div>
 </div>
@@ -44,6 +44,6 @@
   @for (b of filtered(); track b.id) {
     <app-bill-card [bill]="b" (pay)="onPay($event)" />
   } @empty {
-    <p>Walang bills na tumutugma.</p>
+    <p>No matching bills.</p>
   }
 </div>

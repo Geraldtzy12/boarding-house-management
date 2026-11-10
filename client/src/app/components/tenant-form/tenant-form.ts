@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { Tenant } from '../../models/tenant';
 import { Room } from '../../models/room';
 import { TenantPayload } from '../../services/tenant.service';
+import { DatePicker } from '../date-picker/date-picker';
 
 function today(): string {
   const d = new Date();
@@ -13,7 +14,7 @@ function today(): string {
 
 @Component({
   selector: 'app-tenant-form',
-  imports: [FormsModule],
+  imports: [FormsModule, DatePicker],
   templateUrl: './tenant-form.html',
   styleUrl: './tenant-form.css'
 })

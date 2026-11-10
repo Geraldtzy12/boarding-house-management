@@ -18,9 +18,10 @@
     </select>
   </label>
 
-  <label>Lease start
-    <input name="leaseStart" type="date" [(ngModel)]="leaseStart" />
-  </label>
+  <div class="field">
+    <span>Lease start</span>
+    <app-date-picker [(value)]="leaseStart" />
+  </div>
 
   <div class="actions">
     <button type="submit" [disabled]="!canSave()">Save</button>

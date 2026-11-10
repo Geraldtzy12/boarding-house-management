@@ -3,6 +3,9 @@ import { FormsModule } from '@angular/forms';
 import { Tenant } from '../../models/tenant';
 import { BillType } from '../../models/bill';
 import { BillPayload } from '../../services/bill.service';
+import { DatePicker } from '../date-picker/date-picker';
+import { MonthPicker } from '../month-picker/month-picker';
+
 
 function currentMonth(): string {
   const d = new Date();
@@ -18,7 +21,7 @@ function today(): string {
 
 @Component({
   selector: 'app-bill-form',
-  imports: [FormsModule],
+  imports: [FormsModule, DatePicker, MonthPicker],
   templateUrl: './bill-form.html',
   styleUrl: './bill-form.css'
 })
