@@ -1,0 +1,41 @@
+<form class="form" (ngSubmit)="submit()">
+  <h3>Add Bill</h3>
+
+  <label>Tenant
+    <select name="tenantId" [(ngModel)]="tenantId">
+      <option [ngValue]="null">-- Pumili ng tenant --</option>
+      @for (t of tenants(); track t.id) {
+        <option [ngValue]="t.id">{{ t.name }} (Room {{ t.room?.roomNo }})</option>
+      }
+    </select>
+  </label>
+
+  <label>Type
+    <select name="type" [(ngModel)]="type">
+      @for (t of types; track t) {
+        <option [ngValue]="t">{{ t }}</option>
+      }
+    </select>
+  </label>
+
+  <label>Buwan
+    <input name="month" type="month" [(ngModel)]="month" />
+  </label>
+
+  <label>Halaga (PHP)
+    <input name="amount" type="number" min="0" [(ngModel)]="amount" />
+  </label>
+
+  <label>Due date
+    <input name="dueDate" type="date" [(ngModel)]="dueDate" />
+  </label>
+
+  <label>Note (optional)
+    <input name="note" [(ngModel)]="note" placeholder="Halimbawa: Meter 1200 to 1285" />
+  </label>
+
+  <div class="actions">
+    <button type="submit" [disabled]="!canSave()">Save</button>
+    <button type="button" (click)="cancelled.emit()">Cancel</button>
+  </div>
+</form>

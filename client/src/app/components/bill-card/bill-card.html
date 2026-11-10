@@ -8,7 +8,10 @@
       {{ bill().status }}
     </span>
   </div>
-  <p>Room {{ bill().roomNo }} · {{ bill().month }}</p>
+    <p>{{ bill().type }} · Room {{ bill().roomNo }} · {{ bill().month }}</p>
+  @if (bill().note) {
+    <p>{{ bill().note }}</p>
+  }
   <p>{{ bill().amount | currency:'PHP' }}</p>
   <p>Due: {{ bill().dueDate | date:'mediumDate' }}</p>
   @if (bill().paidOn) {

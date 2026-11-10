@@ -1,8 +1,9 @@
 <div class="toolbar">
   <h2>Bills</h2>
   <div class="generate">
+    <button (click)="onAddClick()">+ Add bill</button>
     <input type="month" [(ngModel)]="month" />
-    <button (click)="onGenerate()" [disabled]="!month()">Generate bills</button>
+    <button (click)="onGenerate()" [disabled]="!month()">Generate rent bills</button>
   </div>
 </div>
 
@@ -11,6 +12,13 @@
 }
 @if (error()) {
   <p class="error">{{ error() }}</p>
+}
+
+@if (showForm()) {
+  <app-bill-form
+    [tenants]="billableTenants()"
+    (saved)="onSave($event)"
+    (cancelled)="onCancel()" />
 }
 
 <div class="summary">
@@ -26,10 +34,16 @@
   }
 </div>
 
+<div class="filters">
+  @for (t of typeFilters; track t) {
+    <button [class.active]="typeFilter() === t" (click)="typeFilter.set(t)">{{ t }}</button>
+  }
+</div>
+
 <div class="grid">
   @for (b of filtered(); track b.id) {
     <app-bill-card [bill]="b" (pay)="onPay($event)" />
   } @empty {
-    <p>Walang bills. I-click ang "Generate bills".</p>
+    <p>Walang bills na tumutugma.</p>
   }
 </div>

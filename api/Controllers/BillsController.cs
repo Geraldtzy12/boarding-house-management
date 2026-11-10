@@ -33,7 +33,49 @@ public class BillsController : ControllerBase
             .ToListAsync();
     }
 
-    // POST /api/bills/generate?month=2026-11  (walang month = kasalukuyang buwan)
+    // POST /api/bills  (manual: kuryente, tubig, rent, iba pa)
+    [HttpPost]
+    public async Task<IActionResult> Create(CreateBillRequest request)
+    {
+        if (request.Amount <= 0)
+            return BadRequest("Dapat mas malaki sa 0 ang halaga.");
+
+        if (string.IsNullOrWhiteSpace(request.Month) || ParseMonth(request.Month) is null)
+            return BadRequest("Gamitin ang format na yyyy-MM, halimbawa 2026-11.");
+
+        var tenant = await _db.Tenants
+            .Include(t => t.Room)
+            .FirstOrDefaultAsync(t => t.Id == request.TenantId);
+
+        if (tenant is null || !tenant.IsActive || tenant.Room is null)
+            return BadRequest("Pumili ng active na tenant na may room.");
+
+        var exists = await _db.Bills.AnyAsync(b =>
+            b.TenantId == request.TenantId && b.Month == request.Month && b.Type == request.Type);
+
+        if (exists)
+            return Conflict($"May {request.Type} bill na si {tenant.Name} para sa {request.Month}.");
+
+        var bill = new Bill
+        {
+            TenantId = tenant.Id,
+            RoomNo = tenant.Room.RoomNo,
+            Type = request.Type,
+            Month = request.Month,
+            Amount = request.Amount,
+            DueDate = request.DueDate,
+            Status = BillStatus.Pending,
+            Note = string.IsNullOrWhiteSpace(request.Note) ? null : request.Note.Trim()
+        };
+
+        _db.Bills.Add(bill);
+        await _db.SaveChangesAsync();
+        await RefreshOverdue();
+
+        return Ok(bill);
+    }
+
+    // POST /api/bills/generate?month=2026-11  (Rent lang; walang month = kasalukuyang buwan)
     [HttpPost("generate")]
     public async Task<IActionResult> Generate([FromQuery] string? month)
     {
@@ -50,7 +92,7 @@ public class BillsController : ControllerBase
             .ToListAsync();
 
         var alreadyBilled = await _db.Bills
-            .Where(b => b.Month == monthKey)
+            .Where(b => b.Month == monthKey && b.Type == BillType.Rent)
             .Select(b => b.TenantId)
             .ToListAsync();
 
@@ -68,6 +110,7 @@ public class BillsController : ControllerBase
             {
                 TenantId = t.Id,
                 RoomNo = t.Room.RoomNo,
+                Type = BillType.Rent,
                 Month = monthKey,
                 Amount = t.Room.MonthlyRate,
                 DueDate = new DateOnly(first.Value.Year, first.Value.Month, day),
@@ -120,3 +163,11 @@ public class BillsController : ControllerBase
         return DateOnly.TryParseExact(month + "-01", "yyyy-MM-dd", out var date) ? date : null;
     }
 }
+
+public record CreateBillRequest(
+    int TenantId,
+    BillType Type,
+    string Month,
+    decimal Amount,
+    DateOnly DueDate,
+    string? Note);

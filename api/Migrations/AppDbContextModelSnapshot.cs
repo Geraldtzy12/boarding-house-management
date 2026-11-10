@@ -33,6 +33,9 @@ namespace BoardingHouse.Api.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("Note")
+                        .HasColumnType("TEXT");
+
                     b.Property<DateOnly?>("PaidOn")
                         .HasColumnType("TEXT");
 
@@ -46,9 +49,12 @@ namespace BoardingHouse.Api.Migrations
                     b.Property<int>("TenantId")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int>("Type")
+                        .HasColumnType("INTEGER");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("TenantId", "Month")
+                    b.HasIndex("TenantId", "Month", "Type")
                         .IsUnique();
 
                     b.ToTable("Bills");

@@ -27,7 +27,7 @@ public class AppDbContext : DbContext
                 .OnDelete(DeleteBehavior.Restrict);
 
             // isang bill lang bawat tenant bawat buwan
-            b.HasIndex(x => new { x.TenantId, x.Month }).IsUnique();
+           b.HasIndex(x => new { x.TenantId, x.Month, x.Type }).IsUnique();
         });
     }
 }
