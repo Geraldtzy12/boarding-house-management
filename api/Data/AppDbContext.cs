@@ -9,6 +9,7 @@ public class AppDbContext : DbContext
 
     public DbSet<Room> Rooms => Set<Room>();
     public DbSet<Tenant> Tenants => Set<Tenant>();
+    public DbSet<Bill> Bills => Set<Bill>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -17,5 +18,16 @@ public class AppDbContext : DbContext
             .WithMany()
             .HasForeignKey(t => t.RoomId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Bill>(b =>
+        {
+            b.HasOne(x => x.Tenant)
+                .WithMany()
+                .HasForeignKey(x => x.TenantId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // isang bill lang bawat tenant bawat buwan
+            b.HasIndex(x => new { x.TenantId, x.Month }).IsUnique();
+        });
     }
 }

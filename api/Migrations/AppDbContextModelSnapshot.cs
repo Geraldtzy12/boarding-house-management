@@ -17,6 +17,43 @@ namespace BoardingHouse.Api.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.14");
 
+            modelBuilder.Entity("BoardingHouse.Api.Models.Bill", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateOnly>("DueDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Month")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateOnly?>("PaidOn")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("RoomNo")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "Month")
+                        .IsUnique();
+
+                    b.ToTable("Bills");
+                });
+
             modelBuilder.Entity("BoardingHouse.Api.Models.Room", b =>
                 {
                     b.Property<int>("Id")
@@ -69,6 +106,17 @@ namespace BoardingHouse.Api.Migrations
                     b.HasIndex("RoomId");
 
                     b.ToTable("Tenants");
+                });
+
+            modelBuilder.Entity("BoardingHouse.Api.Models.Bill", b =>
+                {
+                    b.HasOne("BoardingHouse.Api.Models.Tenant", "Tenant")
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Tenant");
                 });
 
             modelBuilder.Entity("BoardingHouse.Api.Models.Tenant", b =>
