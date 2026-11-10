@@ -1,0 +1,22 @@
+<div class="card">
+  <div class="top">
+    <h3>{{ bill().tenant?.name }}</h3>
+    <span
+      class="badge"
+      [class.overdue]="bill().status === 'Overdue'"
+      [class.pending]="bill().status === 'Pending'">
+      {{ bill().status }}
+    </span>
+  </div>
+  <p>Room {{ bill().roomNo }} · {{ bill().month }}</p>
+  <p>{{ bill().amount | currency:'PHP' }}</p>
+  <p>Due: {{ bill().dueDate | date:'mediumDate' }}</p>
+  @if (bill().paidOn) {
+    <p>Paid on: {{ bill().paidOn | date:'mediumDate' }}</p>
+  }
+  @if (bill().status !== 'Paid') {
+    <div class="actions">
+      <button (click)="pay.emit(bill().id)">Mark as paid</button>
+    </div>
+  }
+</div>

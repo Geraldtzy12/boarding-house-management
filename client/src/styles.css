@@ -21,3 +21,15 @@ button.danger { background: #dc2626; }
 .nav a.active { background: #2563eb; color: #fff; }
 .toolbar { display: flex; justify-content: space-between; align-items: center; padding: 16px 24px 0; }
 .toolbar h2 { margin: 0; }
+.badge.overdue { background: #fee2e2; color: #991b1b; }
+.badge.pending { background: #fef3c7; color: #92400e; }
+.generate { display: flex; gap: 8px; align-items: center; }
+.generate input { padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; }
+.summary { display: flex; flex-wrap: wrap; gap: 16px; padding: 16px 24px 0; }
+.stat { display: grid; gap: 4px; background: #fff; border-radius: 10px; padding: 12px 16px; min-width: 120px; box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+.stat span { font-size: .8rem; color: #64748b; }
+.stat strong { font-size: 1.25rem; }
+.filters { display: flex; gap: 8px; padding: 16px 24px 0; }
+.filters button { background: #e2e8f0; color: #1f2937; }
+.filters button.active { background: #2563eb; color: #fff; }
+.message { color: #047857; padding: 0 24px; }

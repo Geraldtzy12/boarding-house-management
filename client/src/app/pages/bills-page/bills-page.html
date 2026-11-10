@@ -1,0 +1,35 @@
+<div class="toolbar">
+  <h2>Bills</h2>
+  <div class="generate">
+    <input type="month" [(ngModel)]="month" />
+    <button (click)="onGenerate()" [disabled]="!month()">Generate bills</button>
+  </div>
+</div>
+
+@if (message()) {
+  <p class="message">{{ message() }}</p>
+}
+@if (error()) {
+  <p class="error">{{ error() }}</p>
+}
+
+<div class="summary">
+  <div class="stat"><span>Overdue</span><strong>{{ overdueCount() }}</strong></div>
+  <div class="stat"><span>Overdue total</span><strong>{{ overdueTotal() | currency:'PHP' }}</strong></div>
+  <div class="stat"><span>Pending</span><strong>{{ pendingCount() }}</strong></div>
+  <div class="stat"><span>Paid</span><strong>{{ paidCount() }}</strong></div>
+</div>
+
+<div class="filters">
+  @for (f of filters; track f) {
+    <button [class.active]="filter() === f" (click)="filter.set(f)">{{ f }}</button>
+  }
+</div>
+
+<div class="grid">
+  @for (b of filtered(); track b.id) {
+    <app-bill-card [bill]="b" (pay)="onPay($event)" />
+  } @empty {
+    <p>Walang bills. I-click ang "Generate bills".</p>
+  }
+</div>
