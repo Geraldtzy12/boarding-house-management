@@ -28,12 +28,14 @@ body {
 /* ---------- Layout ---------- */
 app-rooms-page,
 app-tenants-page,
-app-bills-page {
+app-bills-page,
+app-dashboard-page {
   display: block;
   max-width: 1240px;
   margin: 0 auto;
   padding: 8px 32px 48px;
 }
+
 
 .nav {
   position: sticky;

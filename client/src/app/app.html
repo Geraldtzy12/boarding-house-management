@@ -1,6 +1,7 @@
 <nav class="nav">
   <h1>Boarding House</h1>
   @if (auth.loggedIn()) {
+    <a routerLink="/dashboard" routerLinkActive="active">Dashboard</a>
     <a routerLink="/rooms" routerLinkActive="active">Rooms</a>
     <a routerLink="/tenants" routerLinkActive="active">Tenants</a>
     <a routerLink="/bills" routerLinkActive="active">Bills</a>

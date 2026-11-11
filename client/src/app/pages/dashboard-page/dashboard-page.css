@@ -1,0 +1,161 @@
+.toolbar span {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.summary .stat strong {
+  font-size: 1.5rem;
+}
+
+/* Quick actions under the title. */
+.actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 4px 0 12px;
+}
+.actions button.secondary {
+  background: #fff;
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+.actions button.secondary:hover:not(:disabled) {
+  background: #f1f5f9;
+}
+
+/* Stat cards: colored top border per card. */
+.stat {
+  border-top: 4px solid var(--border);
+}
+.stat-collected {
+  border-top-color: #22c55e;
+}
+.stat-collect {
+  border-top-color: var(--primary);
+}
+.stat-rooms {
+  border-top-color: #6366f1;
+}
+.stat-tenants {
+  border-top-color: #a855f7;
+}
+.stat-overdue-alert {
+  border-top-color: var(--danger);
+}
+.stat-overdue-alert strong {
+  color: var(--danger);
+}
+
+/* Occupancy progress bar inside the Rooms stat. */
+.progress {
+  height: 8px;
+  margin-top: 10px;
+  background: #e2e8f0;
+  border-radius: 999px;
+  overflow: hidden;
+}
+.progress .fill {
+  height: 100%;
+  background: #6366f1;
+  border-radius: 999px;
+}
+
+/* Lists: each card sizes to its own content instead of stretching to the tallest. */
+.grid {
+  align-items: start;
+}
+
+.row {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+.row:last-of-type {
+  border-bottom: 0;
+}
+
+.row-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.row-line.muted {
+  color: var(--muted);
+  font-size: .85rem;
+  margin-top: 2px;
+}
+
+.amount {
+  white-space: nowrap;
+}
+
+.amount.danger {
+  color: var(--danger);
+}
+
+.empty {
+  color: var(--muted);
+}
+
+.view-all {
+  display: inline-block;
+  margin-top: 12px;
+  font-weight: 600;
+  color: var(--primary);
+  text-decoration: none;
+}
+.view-all:hover {
+  text-decoration: underline;
+}
+
+/* Monthly collection chart. */
+.chart-card {
+  margin-top: 20px;
+}
+
+.chart {
+  display: flex;
+  gap: 16px;
+  padding: 8px 0 4px;
+}
+
+.bar-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.bar-value {
+  font-weight: 700;
+  font-size: .9rem;
+  white-space: nowrap;
+}
+
+.bar-track {
+  display: flex;
+  align-items: flex-end;
+  height: 140px;
+  width: 100%;
+}
+
+.bar {
+  width: 100%;
+  max-width: 56px;
+  margin: 0 auto;
+  min-height: 4px;
+  background: #cbd5e1;
+  border-radius: 6px 6px 0 0;
+}
+.bar.current {
+  background: var(--primary);
+}
+
+.bar-label {
+  color: var(--muted);
+  font-size: .85rem;
+  font-weight: 600;
+}
