@@ -1,8 +1,12 @@
 <nav class="nav">
   <h1>Boarding House</h1>
-  <a routerLink="/rooms" routerLinkActive="active">Rooms</a>
-  <a routerLink="/tenants" routerLinkActive="active">Tenants</a>
-  <a routerLink="/bills" routerLinkActive="active">Bills</a>
+  @if (auth.loggedIn()) {
+    <a routerLink="/rooms" routerLinkActive="active">Rooms</a>
+    <a routerLink="/tenants" routerLinkActive="active">Tenants</a>
+    <a routerLink="/bills" routerLinkActive="active">Bills</a>
+    <span class="spacer"></span>
+    <button class="logout" (click)="logout()">Log out</button>
+  }
 </nav>
 
 <router-outlet />

@@ -1,0 +1,26 @@
+.login {
+  display: flex;
+  justify-content: center;
+  padding: 80px 16px;
+}
+
+.login-card {
+  width: min(420px, 92vw);
+  display: grid;
+  gap: 12px;
+}
+
+.login-card h2 { margin: 0; font-size: 1.6rem; }
+.login-card p { margin: 0; color: var(--muted); }
+
+.login-card form { display: grid; gap: 16px; margin-top: 8px; }
+.login-card label { display: grid; gap: 6px; font-weight: 600; font-size: .95rem; }
+.login-card input {
+  font: inherit;
+  font-weight: 400;
+  padding: 12px 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: #fff;
+}
+.login-card input:focus { outline: 2px solid var(--primary); outline-offset: 1px; border-color: var(--primary); }

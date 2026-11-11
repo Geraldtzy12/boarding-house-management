@@ -1,0 +1,20 @@
+<div class="login">
+  <div class="card login-card">
+    <h2>Boarding House</h2>
+    <p>Log in to continue.</p>
+
+    @if (error()) {
+      <p class="error">{{ error() }}</p>
+    }
+
+    <form (ngSubmit)="onSubmit()">
+      <label>Username
+        <input name="username" [(ngModel)]="username" autocomplete="username" />
+      </label>
+      <label>Password
+        <input name="password" type="password" [(ngModel)]="password" autocomplete="current-password" />
+      </label>
+      <button type="submit" [disabled]="busy()">Log in</button>
+    </form>
+  </div>
+</div>

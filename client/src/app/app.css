@@ -1,0 +1,9 @@
+.nav .spacer { flex: 1; }
+
+.nav button.logout {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, .35);
+  padding: 8px 16px;
+}
+
+.nav button.logout:hover:not(:disabled) { background: rgba(255, 255, 255, .12); }
