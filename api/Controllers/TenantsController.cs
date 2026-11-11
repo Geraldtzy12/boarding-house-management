@@ -88,7 +88,9 @@ public class TenantsController : ControllerBase
     }
 
     // (Status, Message) if there is a problem, null if OK.
-    // Duplicate = active tenant with the same name (case-insensitive) AND contact number.
+    // Duplicate = another active tenant with the same name (case-insensitive,
+    // "ANgel" and "angel" are the same person) OR the same contact number
+    // ("0921-302-133" and "0921302133" are the same number).
     // Occupied = another active tenant is already in the room, whatever its capacity.
     // The tenant being edited does not count as occupying their own room.
     private async Task<(int Status, string Message)?> ValidateTenantAsync(Tenant tenant, int? tenantId)
@@ -104,12 +106,15 @@ public class TenantsController : ControllerBase
             .Select(t => new { t.Name, t.Contact })
             .ToListAsync();
 
-        var duplicate = activeTenants.Any(t =>
-            string.Equals(t.Name?.Trim(), name, StringComparison.OrdinalIgnoreCase) &&
-            NormalizeContact(t.Contact) == contact);
+        var sameName = activeTenants.FirstOrDefault(t =>
+            string.Equals(t.Name?.Trim(), name, StringComparison.OrdinalIgnoreCase));
+        if (sameName is not null)
+            return (409, $"There is already a tenant named {name}.");
 
-        if (duplicate)
-            return (409, $"There is already a tenant named {name} with contact number {tenant.Contact?.Trim()}.");
+        var sameNumber = activeTenants.FirstOrDefault(t =>
+            NormalizeContact(t.Contact) == contact);
+        if (sameNumber is not null)
+            return (409, $"The contact number {tenant.Contact?.Trim()} is already used by {sameNumber.Name?.Trim()}.");
 
         if (tenant.RoomId is null) return null;
 

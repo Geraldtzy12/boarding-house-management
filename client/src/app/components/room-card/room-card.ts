@@ -10,6 +10,7 @@ import { Room } from '../../models/room';
 })
 export class RoomCard {
   room = input.required<Room>();   // data DOWN
+  tenantName = input<string | null>(null);   // name of the tenant renting this room
   edit = output<Room>();           // events UP
   remove = output<number>();
 }

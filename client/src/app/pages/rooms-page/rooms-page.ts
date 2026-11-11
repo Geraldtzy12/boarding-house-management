@@ -1,7 +1,9 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { RoomService } from '../../services/room.service';
+import { TenantService } from '../../services/tenant.service';
 import { Room } from '../../models/room';
+import { Tenant } from '../../models/tenant';
 import { RoomCard } from '../../components/room-card/room-card';
 import { RoomForm, RoomDraft } from '../../components/room-form/room-form';
 
@@ -13,11 +15,30 @@ import { RoomForm, RoomDraft } from '../../components/room-form/room-form';
 })
 export class RoomsPage {
   private roomService = inject(RoomService);
+  private tenantService = inject(TenantService);
 
   rooms = signal<Room[]>([]);          // single source of truth
+  tenants = signal<Tenant[]>([]);
   editing = signal<Room | null>(null);
   showForm = signal(false);
   error = signal('');
+
+  // active tenant names per room, so each card can show who rents it
+  tenantByRoom = computed(() => {
+    const map = new Map<number, string[]>();
+    for (const t of this.tenants()) {
+      if (t.roomId === null || !t.isActive) continue;
+      const names = map.get(t.roomId) ?? [];
+      names.push(t.name);
+      map.set(t.roomId, names);
+    }
+    return map;
+  });
+
+  tenantNameFor(roomId: number): string | null {
+    const names = this.tenantByRoom().get(roomId);
+    return names?.length ? names.join(', ') : null;
+  }
 
   constructor() {
     this.load();
@@ -27,6 +48,10 @@ export class RoomsPage {
     this.roomService.getAll().subscribe({
       next: r => this.rooms.set(r),
       error: () => this.error.set('Could not load the rooms. Is the API running?')
+    });
+    this.tenantService.getAll().subscribe({
+      next: t => this.tenants.set(t),
+      error: () => this.error.set('Could not load the tenants. Is the API running?')
     });
   }
 

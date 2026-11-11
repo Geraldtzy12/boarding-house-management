@@ -27,4 +27,14 @@ describe('RoomCard', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('should not show a tenant name when the room is vacant', () => {
+    expect(fixture.nativeElement.textContent).not.toContain('Rented by');
+  });
+
+  it('should show the tenant name when the room is rented', () => {
+    fixture.componentRef.setInput('tenantName', 'Juan Dela Cruz');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Rented by: Juan Dela Cruz');
+  });
 });

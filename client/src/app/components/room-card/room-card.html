@@ -5,6 +5,9 @@
   </div>
   <p>{{ room().monthlyRate | currency:'PHP' }} / month</p>
   <p>Capacity: {{ room().capacity }}</p>
+  @if (tenantName()) {
+    <p>Rented by: {{ tenantName() }}</p>
+  }
   <div class="actions">
     <button (click)="edit.emit(room())">Edit</button>
     <button class="danger" (click)="remove.emit(room().id)">Delete</button>
