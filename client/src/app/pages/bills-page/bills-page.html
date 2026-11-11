@@ -29,9 +29,8 @@
 </div>
 
 <div class="filters">
-  @for (f of filters; track f) {
-    <button [class.active]="filter() === f" (click)="filter.set(f)">{{ f }}</button>
-  }
+  <button [class.active]="view() === 'collect'" (click)="view.set('collect')">To collect ({{ toCollectCount() }})</button>
+  <button [class.active]="view() === 'history'" (click)="view.set('history')">History ({{ paidCount() }})</button>
 </div>
 
 <div class="filters">
@@ -40,10 +39,29 @@
   }
 </div>
 
-<div class="grid">
-  @for (b of filtered(); track b.id) {
-    <app-bill-card [bill]="b" (pay)="onPay($event)" />
+@if (view() === 'collect') {
+  <div class="filters">
+    @for (f of filters; track f) {
+      <button [class.active]="filter() === f" (click)="filter.set(f)">{{ f }}</button>
+    }
+  </div>
+
+  <div class="grid">
+    @for (b of filtered(); track b.id) {
+      <app-bill-card [bill]="b" (pay)="onPay($event)" (remove)="onRemove($event)" />
+    } @empty {
+      <p>No bills to collect.</p>
+    }
+  </div>
+} @else {
+  @for (g of paidByMonth(); track g.month) {
+    <h3>{{ g.label }} · {{ g.bills.length }} bills · {{ g.total | currency:'PHP' }} collected</h3>
+    <div class="grid">
+      @for (b of g.bills; track b.id) {
+        <app-bill-card [bill]="b" (pay)="onPay($event)" (remove)="onRemove($event)" />
+      }
+    </div>
   } @empty {
-    <p>No matching bills.</p>
+    <p>No paid bills yet.</p>
   }
-</div>
+}

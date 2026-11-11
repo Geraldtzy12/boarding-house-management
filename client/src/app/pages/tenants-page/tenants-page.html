@@ -11,6 +11,7 @@
   <app-tenant-form
     [tenant]="editing()"
     [rooms]="rooms()"
+    [error]="error()"
     (saved)="onSave($event)"
     (cancelled)="onCancel()" />
 }

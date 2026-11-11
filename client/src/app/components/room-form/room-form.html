@@ -1,6 +1,10 @@
 <form class="form" (ngSubmit)="submit()">
   <h3>{{ room() ? 'Edit Room' : 'Add Room' }}</h3>
 
+  @if (error()) {
+    <p class="error">{{ error() }}</p>
+  }
+
   <label>Room No.
     <input name="roomNo" [(ngModel)]="roomNo" />
   </label>

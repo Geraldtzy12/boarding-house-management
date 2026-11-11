@@ -11,7 +11,8 @@ export type RoomDraft = Omit<Room, 'id'> & { id?: number };
   styleUrl: './room-form.css'
 })
 export class RoomForm {
-  room = input<Room | null>(null);   // null = Add, may laman = Edit
+  room = input<Room | null>(null);   // null = Add, has a value = Edit
+  error = input<string>('');   // from the page: duplicate room number error from the API
   saved = output<RoomDraft>();
   cancelled = output<void>();
 
@@ -25,7 +26,7 @@ export class RoomForm {
   );
 
   constructor() {
-    // Kapag nagbago ang input na `room`, i-fill ulit ang form
+    // When the `room` input changes, refill the form
     effect(() => {
       const r = this.room();
       this.roomNo.set(r?.roomNo ?? '');
@@ -36,6 +37,7 @@ export class RoomForm {
   }
 
   submit() {
+    if (!this.canSave()) return;
     this.saved.emit({
       id: this.room()?.id,
       roomNo: this.roomNo().trim(),

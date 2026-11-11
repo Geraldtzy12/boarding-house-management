@@ -1,6 +1,10 @@
 <form class="form" (ngSubmit)="submit()">
   <h3>{{ tenant() ? 'Edit Tenant' : 'Add Tenant' }}</h3>
 
+  @if (error()) {
+    <p class="error">{{ error() }}</p>
+  }
+
   <label>Name
     <input name="name" [(ngModel)]="name" />
   </label>
@@ -11,12 +15,16 @@
 
   <label>Room
     <select name="roomId" [(ngModel)]="roomId">
-      <option [ngValue]="null">-- Walang room --</option>
+      <option [ngValue]="null">-- No room --</option>
       @for (r of rooms(); track r.id) {
-        <option [ngValue]="r.id">Room {{ r.roomNo }} ({{ r.status }})</option>
+        <option [ngValue]="r.id" [disabled]="isRoomDisabled(r)">Room {{ r.roomNo }} ({{ r.status }}){{ isRoomDisabled(r) ? ' — not available' : '' }}</option>
       }
     </select>
   </label>
+
+  @if (selectedRoomOccupied()) {
+    <p class="error">This room is already occupied. Please choose another room.</p>
+  }
 
   <div class="field">
     <span>Lease start</span>

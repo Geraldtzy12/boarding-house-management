@@ -14,6 +14,12 @@ function currentMonth(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 }
 
+function monthLabel(month: string): string {
+  const [year, monthNumber] = month.split('-').map(Number);
+  return new Date(year, (monthNumber || 1) - 1, 1)
+    .toLocaleString('en-US', { month: 'long', year: 'numeric' });
+}
+
 @Component({
   selector: 'app-bills-page',
   imports: [BillCard, BillForm, MonthPicker, CurrencyPipe],
@@ -24,7 +30,7 @@ export class BillsPage {
   private billService = inject(BillService);
   private tenantService = inject(TenantService);
 
-  filters = ['All', 'Overdue', 'Pending', 'Paid'] as const;
+  filters = ['All', 'Overdue', 'Pending'] as const;
   typeFilters = ['All', 'Rent', 'Electricity', 'Water', 'Other'] as const;
 
   bills = signal<Bill[]>([]);                      // single source of truth
@@ -32,20 +38,45 @@ export class BillsPage {
   filter = signal<'All' | BillStatus>('All');
   typeFilter = signal<'All' | BillType>('All');
   month = signal(currentMonth());
+  view = signal<'collect' | 'history'>('collect');
   showForm = signal(false);
   message = signal('');
   error = signal('');
 
-  // tenants na active at may room lang
+  // only active tenants with a room
   billableTenants = computed(() => this.tenants().filter(t => t.roomId !== null));
 
+  // To collect: unpaid bills only, by status + type
   filtered = computed(() => {
     const status = this.filter();
     const type = this.typeFilter();
     return this.bills().filter(b =>
+      b.status !== 'Paid' &&
       (status === 'All' || b.status === status) &&
       (type === 'All' || b.type === type)
     );
+  });
+
+  toCollectCount = computed(() => this.bills().filter(b => b.status !== 'Paid').length);
+
+  // History: paid bills, grouped by month (newest first), with totals
+  paidByMonth = computed(() => {
+    const type = this.typeFilter();
+    const paid = this.bills()
+      .filter(b => b.status === 'Paid' && (type === 'All' || b.type === type))
+      .sort((a, b) => b.month.localeCompare(a.month) || b.dueDate.localeCompare(a.dueDate));
+
+    const groups: { month: string; label: string; total: number; bills: Bill[] }[] = [];
+    for (const bill of paid) {
+      let group = groups.find(g => g.month === bill.month);
+      if (!group) {
+        group = { month: bill.month, label: monthLabel(bill.month), total: 0, bills: [] };
+        groups.push(group);
+      }
+      group.bills.push(bill);
+      group.total += bill.amount;
+    }
+    return groups;
   });
 
   overdueCount = computed(() => this.bills().filter(b => b.status === 'Overdue').length);
@@ -62,9 +93,12 @@ export class BillsPage {
   load() {
     this.billService.getAll().subscribe({
       next: b => this.bills.set(b),
-      error: () => this.error.set('Hindi ma-load ang bills. Tumatakbo ba ang API?')
+      error: () => this.error.set('Could not load the bills. Is the API running?')
     });
-    this.tenantService.getAll().subscribe(t => this.tenants.set(t));
+    this.tenantService.getAll().subscribe({
+      next: t => this.tenants.set(t),
+      error: () => this.error.set('Could not load the tenants. Is the API running?')
+    });
   }
 
   onAddClick() {
@@ -81,7 +115,7 @@ export class BillsPage {
     this.error.set('');
     this.billService.create(payload).subscribe({
       next: () => {
-        this.message.set('bill has been added.');
+        this.message.set('Bill has been added.');
         this.showForm.set(false);
         this.load();
       },
@@ -94,7 +128,7 @@ export class BillsPage {
     this.message.set('');
     this.billService.generate(this.month()).subscribe({
       next: r => {
-        this.message.set(`${r.created} bagong rent bill para sa ${r.month}.`);
+        this.message.set(`${r.created} new rent bills for ${r.month}.`);
         this.load();
       },
       error: (err: HttpErrorResponse) => this.error.set(this.messageFrom(err))
@@ -109,9 +143,18 @@ export class BillsPage {
     });
   }
 
+  onRemove(id: number) {
+    if (!confirm('Delete this bill? This cannot be undone.')) return;
+    this.error.set('');
+    this.billService.delete(id).subscribe({
+      next: () => this.load(),
+      error: (err: HttpErrorResponse) => this.error.set(this.messageFrom(err))
+    });
+  }
+
   private messageFrom(err: HttpErrorResponse): string {
     return typeof err.error === 'string' && err.error
       ? err.error
-      : 'May error. Subukan ulit.';
+      : 'Something went wrong. Please try again.';
   }
 }

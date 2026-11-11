@@ -19,8 +19,9 @@ function today(): string {
   styleUrl: './tenant-form.css'
 })
 export class TenantForm {
-  tenant = input<Tenant | null>(null);   // null = Add, may laman = Edit
+  tenant = input<Tenant | null>(null);   // null = Add, has a value = Edit
   rooms = input.required<Room[]>();
+  error = input<string>('');   // from the page: duplicate / occupied error from the API
   saved = output<TenantPayload>();
   cancelled = output<void>();
 
@@ -29,10 +30,24 @@ export class TenantForm {
   roomId = signal<number | null>(null);
   leaseStart = signal(today());
 
+  selectedRoom = computed(() =>
+    this.rooms().find(r => r.id === this.roomId()) ?? null
+  );
+
+  // Occupied room, except the tenant's own room when editing
+  selectedRoomOccupied = computed(() => {
+    const r = this.selectedRoom();
+    return r?.status === 'Occupied' && r.id !== this.tenant()?.roomId;
+  });
+
+  isRoomDisabled = (room: Room): boolean =>
+    room.status === 'Occupied' && room.id !== this.tenant()?.roomId;
+
   canSave = computed(() =>
     this.name().trim().length > 0 &&
     this.contact().trim().length > 0 &&
-    this.leaseStart().length > 0
+    this.leaseStart().length > 0 &&
+    !this.selectedRoomOccupied()
   );
 
   constructor() {
@@ -46,6 +61,7 @@ export class TenantForm {
   }
 
   submit() {
+    if (!this.canSave()) return;
     this.saved.emit({
       id: this.tenant()?.id,
       name: this.name().trim(),

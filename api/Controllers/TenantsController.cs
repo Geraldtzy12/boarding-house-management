@@ -31,11 +31,13 @@ public class TenantsController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<Tenant>> Create(Tenant tenant)
     {
-        tenant.Room = null;       // RoomId lang ang gagamitin
+        tenant.Room = null;       // Only RoomId is used
         tenant.IsActive = true;
+        tenant.Name = tenant.Name?.Trim() ?? string.Empty;
+        tenant.Contact = tenant.Contact?.Trim() ?? string.Empty;
 
-        var error = await ValidateRoom(tenant.RoomId, null);
-        if (error is not null) return BadRequest(error);
+        var validation = await ValidateTenantAsync(tenant, null);
+        if (validation is not null) return StatusCode(validation.Value.Status, validation.Value.Message);
 
         _db.Tenants.Add(tenant);
         await _db.SaveChangesAsync();
@@ -52,8 +54,11 @@ public class TenantsController : ControllerBase
         var existing = await _db.Tenants.FindAsync(id);
         if (existing is null) return NotFound();
 
-        var error = await ValidateRoom(tenant.RoomId, id);
-        if (error is not null) return BadRequest(error);
+        tenant.Name = tenant.Name?.Trim() ?? string.Empty;
+        tenant.Contact = tenant.Contact?.Trim() ?? string.Empty;
+
+        var validation = await ValidateTenantAsync(tenant, id);
+        if (validation is not null) return StatusCode(validation.Value.Status, validation.Value.Message);
 
         var oldRoomId = existing.RoomId;
         existing.Name = tenant.Name;
@@ -82,24 +87,49 @@ public class TenantsController : ControllerBase
         return NoContent();
     }
 
-    // May error message kung hindi pwede ang room, null kung okay
-    private async Task<string?> ValidateRoom(int? roomId, int? tenantId)
+    // (Status, Message) if there is a problem, null if OK.
+    // Duplicate = active tenant with the same name (case-insensitive) AND contact number.
+    // Occupied = another active tenant is already in the room, whatever its capacity.
+    // The tenant being edited does not count as occupying their own room.
+    private async Task<(int Status, string Message)?> ValidateTenantAsync(Tenant tenant, int? tenantId)
     {
-        if (roomId is null) return null;
+        var name = tenant.Name?.Trim() ?? string.Empty;
+        var contact = NormalizeContact(tenant.Contact);
 
-        var room = await _db.Rooms.FindAsync(roomId);
-        if (room is null) return "Hindi nahanap ang room.";
+        if (name.Length == 0) return (400, "Enter a name for the tenant.");
+        if (contact.Length == 0) return (400, "Enter a contact number for the tenant.");
 
-        var occupants = await _db.Tenants
-            .CountAsync(t => t.RoomId == roomId && t.IsActive && t.Id != tenantId);
+        var activeTenants = await _db.Tenants
+            .Where(t => t.IsActive && (tenantId == null || t.Id != tenantId))
+            .Select(t => new { t.Name, t.Contact })
+            .ToListAsync();
 
-        if (occupants >= room.Capacity)
-            return $"Puno na ang Room {room.RoomNo} (capacity {room.Capacity}).";
+        var duplicate = activeTenants.Any(t =>
+            string.Equals(t.Name?.Trim(), name, StringComparison.OrdinalIgnoreCase) &&
+            NormalizeContact(t.Contact) == contact);
+
+        if (duplicate)
+            return (409, $"There is already a tenant named {name} with contact number {tenant.Contact?.Trim()}.");
+
+        if (tenant.RoomId is null) return null;
+
+        var room = await _db.Rooms.FindAsync(tenant.RoomId);
+        if (room is null) return (400, "Room not found.");
+
+        var occupiedByOther = await _db.Tenants
+            .AnyAsync(t => t.RoomId == tenant.RoomId && t.IsActive && t.Id != tenantId);
+
+        if (occupiedByOther)
+            return (409, $"Room {room.RoomNo} is already occupied. Please choose another room.");
 
         return null;
     }
 
-    // Occupied kung may tenant, Vacant kung wala
+    // "0917-123 4567" and "09171234567" are the same number
+    private static string NormalizeContact(string? contact) =>
+        new string((contact ?? "").Where(char.IsDigit).ToArray());
+
+    // Occupied if it has a tenant, Vacant if not
     private async Task SyncRoomStatus(int? roomId)
     {
         if (roomId is null) return;

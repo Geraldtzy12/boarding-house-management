@@ -23,6 +23,14 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+// Apply pending EF Core migrations on startup so a fresh clone
+// (empty SQLite file, no tables yet) works without a manual
+// `dotnet ef database update`.
+using (var scope = app.Services.CreateScope())
+{
+    scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.Migrate();
+}
+
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();

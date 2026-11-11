@@ -33,28 +33,28 @@ public class BillsController : ControllerBase
             .ToListAsync();
     }
 
-    // POST /api/bills  (manual: kuryente, tubig, rent, iba pa)
+    // POST /api/bills  (manual: electricity, water, rent, etc.)
     [HttpPost]
     public async Task<IActionResult> Create(CreateBillRequest request)
     {
         if (request.Amount <= 0)
-            return BadRequest("Dapat mas malaki sa 0 ang halaga.");
+            return BadRequest("The amount must be greater than 0.");
 
         if (string.IsNullOrWhiteSpace(request.Month) || ParseMonth(request.Month) is null)
-            return BadRequest("Gamitin ang format na yyyy-MM, halimbawa 2026-11.");
+            return BadRequest("Use the yyyy-MM format, for example 2026-11.");
 
         var tenant = await _db.Tenants
             .Include(t => t.Room)
             .FirstOrDefaultAsync(t => t.Id == request.TenantId);
 
         if (tenant is null || !tenant.IsActive || tenant.Room is null)
-            return BadRequest("Pumili ng active na tenant na may room.");
+            return BadRequest("Choose an active tenant with a room.");
 
         var exists = await _db.Bills.AnyAsync(b =>
             b.TenantId == request.TenantId && b.Month == request.Month && b.Type == request.Type);
 
         if (exists)
-            return Conflict($"May {request.Type} bill na si {tenant.Name} para sa {request.Month}.");
+            return Conflict($"{tenant.Name} already has a {request.Type} bill for {request.Month}.");
 
         var bill = new Bill
         {
@@ -75,13 +75,13 @@ public class BillsController : ControllerBase
         return Ok(bill);
     }
 
-    // POST /api/bills/generate?month=2026-11  (Rent lang; walang month = kasalukuyang buwan)
+    // POST /api/bills/generate?month=2026-11  (Rent only; no month = current month)
     [HttpPost("generate")]
     public async Task<IActionResult> Generate([FromQuery] string? month)
     {
         var first = ParseMonth(month);
         if (first is null)
-            return BadRequest("Gamitin ang format na yyyy-MM, halimbawa 2026-11.");
+            return BadRequest("Use the yyyy-MM format, for example 2026-11.");
 
         var monthKey = first.Value.ToString("yyyy-MM");
         var lastDay = first.Value.AddMonths(1).AddDays(-1);
@@ -101,8 +101,8 @@ public class BillsController : ControllerBase
         foreach (var t in tenants)
         {
             if (t.Room is null) continue;
-            if (alreadyBilled.Contains(t.Id)) continue;   // iwas duplicate
-            if (t.LeaseStart > lastDay) continue;         // hindi pa nagsisimula ang lease
+            if (alreadyBilled.Contains(t.Id)) continue;   // avoid duplicates
+            if (t.LeaseStart > lastDay) continue;         // lease hasn't started yet
 
             var day = Math.Min(t.LeaseStart.Day, DateTime.DaysInMonth(first.Value.Year, first.Value.Month));
 
@@ -131,7 +131,7 @@ public class BillsController : ControllerBase
     {
         var bill = await _db.Bills.FindAsync(id);
         if (bill is null) return NotFound();
-        if (bill.Status == BillStatus.Paid) return Conflict("Bayad na ang bill na ito.");
+        if (bill.Status == BillStatus.Paid) return Conflict("This bill is already paid.");
 
         bill.Status = BillStatus.Paid;
         bill.PaidOn = DateOnly.FromDateTime(DateTime.Today);
@@ -139,7 +139,22 @@ public class BillsController : ControllerBase
         return NoContent();
     }
 
-    // Pending na lumampas na ang due date -> Overdue
+    // DELETE /api/bills/1 — unpaid bills only.
+    // Paid bills are collection records, so they cannot be deleted.
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete(int id)
+    {
+        var bill = await _db.Bills.FindAsync(id);
+        if (bill is null) return NotFound();
+        if (bill.Status == BillStatus.Paid)
+            return Conflict("Paid bills cannot be deleted. They are part of the collection history.");
+
+        _db.Bills.Remove(bill);
+        await _db.SaveChangesAsync();
+        return NoContent();
+    }
+
+    // Pending bills past their due date -> Overdue
     private async Task RefreshOverdue()
     {
         var today = DateOnly.FromDateTime(DateTime.Today);

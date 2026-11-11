@@ -32,7 +32,10 @@ export class TenantsPage {
       next: t => this.tenants.set(t),
       error: () => this.error.set('Hindi ma-load ang tenants. Tumatakbo ba ang API?')
     });
-    this.roomService.getAll().subscribe(r => this.rooms.set(r));
+    this.roomService.getAll().subscribe({
+      next: r => this.rooms.set(r),
+      error: () => this.error.set('Hindi ma-load ang rooms. Tumatakbo ba ang API?')
+    });
   }
 
   onAddClick() {

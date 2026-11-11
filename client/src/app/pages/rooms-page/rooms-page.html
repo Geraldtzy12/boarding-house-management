@@ -8,13 +8,13 @@
 }
 
 @if (showForm()) {
-  <app-room-form [room]="editing()" (saved)="onSave($event)" (cancelled)="onCancel()" />
+  <app-room-form [room]="editing()" [error]="error()" (saved)="onSave($event)" (cancelled)="onCancel()" />
 }
 
 <div class="grid">
   @for (r of rooms(); track r.id) {
     <app-room-card [room]="r" (edit)="onEdit($event)" (remove)="onRemove($event)" />
   } @empty {
-    <p>Wala pang rooms. I-click ang "+ Add Room".</p>
+    <p>No rooms yet. Click "+ Add Room".</p>
   }
 </div>

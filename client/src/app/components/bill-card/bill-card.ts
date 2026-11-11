@@ -11,4 +11,5 @@ import { Bill } from '../../models/bill';
 export class BillCard {
   bill = input.required<Bill>();   // data DOWN
   pay = output<number>();          // event UP
+  remove = output<number>();       // event UP (delete, unpaid bills only)
 }

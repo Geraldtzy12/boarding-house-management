@@ -18,4 +18,11 @@ describe('RoomForm', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('should show the error passed from the page', async () => {
+    fixture.componentRef.setInput('error', 'There is already a room with number 101.');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    expect(fixture.nativeElement.querySelector('.error')?.textContent).toContain('There is already a room with number 101.');
+  });
 });

@@ -20,6 +20,7 @@
   @if (bill().status !== 'Paid') {
     <div class="actions">
       <button (click)="pay.emit(bill().id)">Mark as paid</button>
+      <button class="danger" (click)="remove.emit(bill().id)">Delete</button>
     </div>
   }
 </div>

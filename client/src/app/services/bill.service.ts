@@ -38,4 +38,8 @@ export class BillService {
   pay(id: number): Observable<void> {
     return this.http.post<void>(`${this.baseUrl}/${id}/pay`, {});
   }
+
+  delete(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/${id}`);
+  }
 }
