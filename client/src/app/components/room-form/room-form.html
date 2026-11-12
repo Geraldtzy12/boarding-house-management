@@ -17,12 +17,33 @@
     <input name="capacity" type="number" min="1" [(ngModel)]="capacity" />
   </label>
 
+  <label>Room Type
+    <select name="type" [(ngModel)]="type">
+      <option value="">— No type —</option>
+      @for (t of roomTypes; track t) {
+        <option [value]="t">{{ t }}</option>
+      }
+    </select>
+  </label>
+
   <label>Status
     <select name="status" [(ngModel)]="status">
       <option value="Vacant">Vacant</option>
       <option value="Occupied">Occupied</option>
     </select>
   </label>
+
+  <div class="field">
+    <span>Room photo <span class="hint">(optional — without one, the room type photo is used)</span></span>
+    <img class="photo-preview" [src]="previewUrl()" alt="Room photo preview" />
+    <input type="file" accept="image/*" (change)="onPhotoSelected($event)" />
+    @if (photoError()) {
+      <p class="error">{{ photoError() }}</p>
+    }
+    @if (imageUrl() || imageFile()) {
+      <button type="button" class="danger" (click)="onRemovePhoto()">Remove photo</button>
+    }
+  </div>
 
   <div class="actions">
     <button type="submit" [disabled]="!canSave()">Save</button>

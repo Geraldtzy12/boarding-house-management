@@ -69,6 +69,9 @@ namespace BoardingHouse.Api.Migrations
                     b.Property<int>("Capacity")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("ImageUrl")
+                        .HasColumnType("TEXT");
+
                     b.Property<decimal>("MonthlyRate")
                         .HasColumnType("TEXT");
 
@@ -78,6 +81,9 @@ namespace BoardingHouse.Api.Migrations
 
                     b.Property<int>("Status")
                         .HasColumnType("INTEGER");
+
+                    b.Property<string>("Type")
+                        .HasColumnType("TEXT");
 
                     b.HasKey("Id");
 

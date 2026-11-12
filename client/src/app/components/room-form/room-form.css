@@ -1,0 +1,22 @@
+.form .hint {
+  font-weight: 400;
+  color: var(--muted);
+  font-size: .85rem;
+}
+
+.photo-preview {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+}
+
+.form input[type="file"] {
+  padding: 10px 0;
+  border: 0;
+}
+
+.form .field .error {
+  margin: 0;
+}

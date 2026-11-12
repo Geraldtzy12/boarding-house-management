@@ -49,13 +49,18 @@ public class DashboardController : ControllerBase
             VacantRoomList: rooms
                 .Where(r => r.Status == RoomStatus.Vacant)
                 .OrderBy(r => r.RoomNo)
-                .Select(r => new VacantRoom(r.Id, r.RoomNo, r.MonthlyRate, r.Capacity)).ToList(),
+                .Select(r => new VacantRoom(r.Id, r.RoomNo, r.MonthlyRate, r.Capacity, r.Type, r.ImageUrl)).ToList(),
             RecentPayments: bills
                 .Where(b => b.Status == BillStatus.Paid && b.PaidOn is not null)
                 .OrderByDescending(b => b.PaidOn)
                 .Take(5)
                 .Select(b => new RecentPayment(
-                    b.Id, b.Tenant?.Name ?? "—", b.RoomNo, b.Type.ToString(), b.Amount, b.PaidOn!.Value)).ToList()
+                    b.Id, b.Tenant?.Name ?? "—", b.RoomNo, b.Type.ToString(), b.Amount, b.PaidOn!.Value)).ToList(),
+            LatestBills: bills
+                .OrderByDescending(b => b.Id)
+                .Take(5)
+                .Select(b => new LatestBill(
+                    b.Id, b.Tenant?.Name ?? "—", b.RoomNo, b.Type.ToString(), b.Amount, b.DueDate, b.Status.ToString())).ToList()
         );
     }
 
@@ -71,27 +76,6 @@ public class DashboardController : ControllerBase
         foreach (var bill in late) bill.Status = BillStatus.Overdue;
         if (late.Count > 0) await _db.SaveChangesAsync();
     }
-
-    // GET /api/dashboard/monthly — collected totals for the last 6 months (incl. current).
-    [HttpGet("monthly")]
-    public async Task<ActionResult<List<MonthlyCollection>>> GetMonthly()
-    {
-        var today = DateOnly.FromDateTime(DateTime.Today);
-        var firstOfMonth = new DateOnly(today.Year, today.Month, 1);
-        var months = Enumerable.Range(0, 6)
-            .Select(i => firstOfMonth.AddMonths(-5 + i))
-            .ToList();
-
-        var paid = await _db.Bills
-            .Where(b => b.Status == BillStatus.Paid && b.PaidOn != null)
-            .Select(b => new { b.PaidOn!.Value.Year, b.PaidOn!.Value.Month, b.Amount })
-            .ToListAsync();
-
-        return months.Select(m => new MonthlyCollection(
-            $"{m.Year:D4}-{m.Month:D2}",
-            paid.Where(p => p.Year == m.Year && p.Month == m.Month).Sum(p => p.Amount)
-        )).ToList();
-    }
 }
 
 public record DashboardSummary(
@@ -105,12 +89,13 @@ public record DashboardSummary(
     decimal OverdueAmount,
     List<OverdueBill> OverdueBills,
     List<VacantRoom> VacantRoomList,
-    List<RecentPayment> RecentPayments);
+    List<RecentPayment> RecentPayments,
+    List<LatestBill> LatestBills);
 
 public record OverdueBill(int Id, string TenantName, string RoomNo, string Type, decimal Amount, DateOnly DueDate);
 
-public record VacantRoom(int Id, string RoomNo, decimal MonthlyRate, int Capacity);
+public record VacantRoom(int Id, string RoomNo, decimal MonthlyRate, int Capacity, string? Type, string? ImageUrl);
 
 public record RecentPayment(int Id, string TenantName, string RoomNo, string Type, decimal Amount, DateOnly PaidOn);
 
-public record MonthlyCollection(string Month, decimal Collected);
+public record LatestBill(int Id, string TenantName, string RoomNo, string Type, decimal Amount, DateOnly DueDate, string Status);

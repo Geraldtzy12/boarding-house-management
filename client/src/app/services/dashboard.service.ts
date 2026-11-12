@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { DashboardSummary, MonthlyCollection } from '../models/dashboard';
+import { DashboardSummary } from '../models/dashboard';
 
 @Injectable({ providedIn: 'root' })
 export class DashboardService {
@@ -10,9 +10,5 @@ export class DashboardService {
 
   getSummary(): Observable<DashboardSummary> {
     return this.http.get<DashboardSummary>(this.baseUrl);
-  }
-
-  getMonthly(): Observable<MonthlyCollection[]> {
-    return this.http.get<MonthlyCollection[]>(`${this.baseUrl}/monthly`);
   }
 }

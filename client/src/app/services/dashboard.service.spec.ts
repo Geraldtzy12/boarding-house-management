@@ -22,6 +22,9 @@ const fakeSummary: DashboardSummary = {
   recentPayments: [
     { id: 2, tenantName: 'Maria Santos', roomNo: '102', type: 'Rent', amount: 3000, paidOn: '2026-11-05' },
   ],
+  latestBills: [
+    { id: 3, tenantName: 'Maria Santos', roomNo: '102', type: 'Rent', amount: 3000, dueDate: '2026-11-05', status: 'Paid' },
+  ],
 };
 
 describe('DashboardService', () => {
@@ -47,19 +50,5 @@ describe('DashboardService', () => {
     const req = httpMock.expectOne('http://localhost:5262/api/dashboard');
     expect(req.request.method).toBe('GET');
     req.flush(fakeSummary);
-  });
-
-  it('should fetch the monthly collections from /api/dashboard/monthly', () => {
-    service.getMonthly().subscribe(m => {
-      expect(m.length).toBe(2);
-      expect(m[1].month).toBe('2026-11');
-      expect(m[1].collected).toBe(9500);
-    });
-    const req = httpMock.expectOne('http://localhost:5262/api/dashboard/monthly');
-    expect(req.request.method).toBe('GET');
-    req.flush([
-      { month: '2026-10', collected: 4200 },
-      { month: '2026-11', collected: 9500 },
-    ]);
   });
 });

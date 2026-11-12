@@ -1,15 +1,21 @@
-<div class="card">
-  <div class="top">
-    <h3>Room {{ room().roomNo }}</h3>
-    <span class="badge" [class.occupied]="room().status === 'Occupied'">{{ room().status }}</span>
-  </div>
-  <p>{{ room().monthlyRate | currency:'PHP' }} / month</p>
-  <p>Capacity: {{ room().capacity }}</p>
-  @if (tenantName()) {
-    <p>Rented by: {{ tenantName() }}</p>
-  }
-  <div class="actions">
-    <button (click)="edit.emit(room())">Edit</button>
-    <button class="danger" (click)="remove.emit(room().id)">Delete</button>
+<div class="card room-card">
+  <img class="photo" [src]="imageFor(room())" [alt]="'Room ' + room().roomNo" />
+  <div class="body">
+    <div class="top">
+      <h3>Room {{ room().roomNo }}</h3>
+      <span class="badge" [class.occupied]="room().status === 'Occupied'">{{ room().status }}</span>
+    </div>
+    @if (room().type) {
+      <span class="type-chip">{{ room().type }}</span>
+    }
+    <p>{{ room().monthlyRate | currency:'PHP' }} / month</p>
+    <p>Capacity: {{ room().capacity }}</p>
+    @if (tenantName()) {
+      <p>Rented by: {{ tenantName() }}</p>
+    }
+    <div class="actions">
+      <button (click)="edit.emit(room())">Edit</button>
+      <button class="danger" (click)="remove.emit(room().id)">Delete</button>
+    </div>
   </div>
 </div>

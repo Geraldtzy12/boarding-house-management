@@ -1,0 +1,30 @@
+.room-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.room-card .photo {
+  display: block;
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+}
+
+.room-card .body {
+  padding: 20px 22px 22px;
+}
+
+.room-card .top {
+  margin-bottom: 4px;
+}
+
+.type-chip {
+  display: inline-block;
+  margin: 4px 0 8px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #f5f1ea;
+  color: #57534e;
+  font-size: .8rem;
+  font-weight: 700;
+}

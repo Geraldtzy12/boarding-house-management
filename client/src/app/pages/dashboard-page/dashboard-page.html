@@ -18,12 +18,28 @@
 }
 
 @if (summary(); as s) {
+  <div class="hero">
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <span>Collected this month</span>
+        <strong>{{ s.collectedThisMonth | currency:'PHP':'symbol':'1.0-0' }}</strong>
+        <div class="progress"><div class="fill fill-collected" [style.width.%]="collectedShare(s)"></div></div>
+      </div>
+      <div class="hero-stat">
+        <span>To collect</span>
+        <strong>{{ s.toCollect | currency:'PHP':'symbol':'1.0-0' }}</strong>
+        <div class="progress"><div class="fill fill-collect" [style.width.%]="toCollectShare(s)"></div></div>
+      </div>
+    </div>
+    <img class="hero-photo" src="hero-boarding-house.webp" alt="Boarding house" />
+  </div>
+
   <div class="summary">
-    <div class="stat stat-collected">
+    <div class="stat">
       <span>Collected this month</span>
       <strong>{{ s.collectedThisMonth | currency:'PHP':'symbol':'1.0-0' }}</strong>
     </div>
-    <div class="stat stat-collect">
+    <div class="stat">
       <span>To collect</span>
       <strong>{{ s.toCollect | currency:'PHP':'symbol':'1.0-0' }}</strong>
     </div>
@@ -31,15 +47,69 @@
       <span>Overdue</span>
       <strong>{{ s.overdueCount }} bills · {{ s.overdueAmount | currency:'PHP':'symbol':'1.0-0' }}</strong>
     </div>
-    <div class="stat stat-rooms">
+    <div class="stat">
       <span>Rooms</span>
       <strong>{{ s.occupiedRooms }} / {{ s.totalRooms }} occupied</strong>
       <div class="progress"><div class="fill" [style.width.%]="occupancyPercent(s)"></div></div>
     </div>
-    <div class="stat stat-tenants">
+    <div class="stat">
       <span>Active tenants</span>
       <strong>{{ s.activeTenants }}</strong>
     </div>
+  </div>
+
+  <div class="card rooms-card">
+    <div class="top"><h3>Vacant rooms</h3></div>
+    @if (s.vacantRoomList.length > 0) {
+      <div class="room-photos">
+        @for (r of s.vacantRoomList; track r.id) {
+          <a class="room-photo-card" routerLink="/rooms">
+            <img [src]="imageFor(r)" [alt]="'Room ' + r.roomNo" />
+            <div class="room-photo-info">
+              <div class="row-line">
+                <strong>Room {{ r.roomNo }}</strong>
+                <strong class="amount">{{ r.monthlyRate | currency:'PHP':'symbol':'1.0-0' }}/mo</strong>
+              </div>
+              <div class="row-line muted">
+                @if (r.type) {
+                  <span>{{ r.type }}</span>
+                }
+                <span>{{ bedLabel(r.capacity) }}</span>
+              </div>
+            </div>
+          </a>
+        }
+      </div>
+    } @else {
+      <p class="empty">All rooms are occupied.</p>
+    }
+    <a class="view-all" routerLink="/rooms">View rooms →</a>
+  </div>
+
+  <div class="card bills-card">
+    <div class="top"><h3>Latest bills</h3></div>
+    @if (s.latestBills.length > 0) {
+      <table class="bills-table">
+        <thead>
+          <tr><th>Tenant</th><th>Room</th><th>Type</th><th>Amount</th><th>Due</th><th>Status</th></tr>
+        </thead>
+        <tbody>
+          @for (b of s.latestBills; track b.id) {
+            <tr>
+              <td>{{ b.tenantName }}</td>
+              <td>{{ b.roomNo }}</td>
+              <td>{{ b.type }}</td>
+              <td>{{ b.amount | currency:'PHP' }}</td>
+              <td>{{ shortDate(b.dueDate) }}</td>
+              <td><span class="badge" [class.overdue]="b.status === 'Overdue'" [class.pending]="b.status === 'Pending'">{{ b.status }}</span></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    } @else {
+      <p class="empty">No bills yet.</p>
+    }
+    <a class="view-all" routerLink="/bills">View all bills →</a>
   </div>
 
   <div class="grid">
@@ -63,24 +133,6 @@
     </div>
 
     <div class="card">
-      <div class="top"><h3>Vacant rooms</h3></div>
-      @for (r of s.vacantRoomList; track r.id) {
-        <div class="row">
-          <div class="row-line">
-            <strong>Room {{ r.roomNo }}</strong>
-            <strong class="amount">{{ r.monthlyRate | currency:'PHP' }}/mo</strong>
-          </div>
-          <div class="row-line muted">
-            <span>{{ bedLabel(r.capacity) }}</span>
-          </div>
-        </div>
-      } @empty {
-        <p class="empty">All rooms are occupied.</p>
-      }
-      <a class="view-all" routerLink="/rooms">View rooms →</a>
-    </div>
-
-    <div class="card">
       <div class="top"><h3>Recent payments</h3></div>
       @for (p of s.recentPayments; track p.id) {
         <div class="row">
@@ -98,24 +150,5 @@
       }
       <a class="view-all" routerLink="/bills">View all bills →</a>
     </div>
-  </div>
-
-  <div class="card chart-card">
-    <div class="top"><h3>Collected per month</h3></div>
-    @if (monthly().length > 0) {
-      <div class="chart">
-        @for (m of monthly(); track m.month) {
-          <div class="bar-col">
-            <span class="bar-value">{{ m.collected | currency:'PHP':'symbol':'1.0-0' }}</span>
-            <div class="bar-track">
-              <div class="bar" [class.current]="isCurrentMonth(m.month)" [style.height.%]="barHeight(m)"></div>
-            </div>
-            <span class="bar-label">{{ monthShort(m.month) }}</span>
-          </div>
-        }
-      </div>
-    } @else {
-      <p class="empty">No collections yet.</p>
-    }
   </div>
 }

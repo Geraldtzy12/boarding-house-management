@@ -2,8 +2,9 @@
 
 .nav button.logout {
   background: transparent;
-  border: 1px solid rgba(255, 255, 255, .35);
+  color: var(--text);
+  border: 1px solid rgba(28, 25, 23, .25);
   padding: 8px 16px;
 }
 
-.nav button.logout:hover:not(:disabled) { background: rgba(255, 255, 255, .12); }
+.nav button.logout:hover:not(:disabled) { background: rgba(28, 25, 23, .06); }

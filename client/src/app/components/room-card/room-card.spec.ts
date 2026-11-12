@@ -37,4 +37,18 @@ describe('RoomCard', () => {
     fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('Rented by: Juan Dela Cruz');
   });
+
+  it('should show the studio photo for a studio room', () => {
+    fixture.componentRef.setInput('room', {
+      id: 1,
+      roomNo: '101',
+      monthlyRate: 3500,
+      capacity: 2,
+      status: 'Vacant',
+      type: 'Studio',
+    } satisfies Room);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('img')?.getAttribute('src')).toBe('rooms/studio.webp');
+    expect(fixture.nativeElement.textContent).toContain('Studio');
+  });
 });

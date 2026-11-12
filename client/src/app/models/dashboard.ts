@@ -12,6 +12,8 @@ export interface VacantRoom {
   roomNo: string;
   monthlyRate: number;
   capacity: number;
+  type?: string | null;
+  imageUrl?: string | null;
 }
 
 export interface RecentPayment {
@@ -21,6 +23,16 @@ export interface RecentPayment {
   type: string;
   amount: number;
   paidOn: string;       // 'yyyy-MM-dd'
+}
+
+export interface LatestBill {
+  id: number;
+  tenantName: string;
+  roomNo: string;
+  type: string;
+  amount: number;
+  dueDate: string;      // 'yyyy-MM-dd'
+  status: string;       // 'Pending' | 'Paid' | 'Overdue'
 }
 
 export interface DashboardSummary {
@@ -35,9 +47,5 @@ export interface DashboardSummary {
   overdueBills: OverdueBill[];
   vacantRoomList: VacantRoom[];
   recentPayments: RecentPayment[];
-}
-
-export interface MonthlyCollection {
-  month: string;      // 'yyyy-MM'
-  collected: number;
+  latestBills: LatestBill[];
 }

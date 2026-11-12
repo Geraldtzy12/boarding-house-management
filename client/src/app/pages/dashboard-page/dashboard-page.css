@@ -20,44 +20,80 @@
   border: 1px solid var(--border);
 }
 .actions button.secondary:hover:not(:disabled) {
-  background: #f1f5f9;
+  background: #f5f1ea;
 }
 
-/* Stat cards: colored top border per card. */
-.stat {
-  border-top: 4px solid var(--border);
-}
-.stat-collected {
-  border-top-color: #22c55e;
-}
-.stat-collect {
-  border-top-color: var(--primary);
-}
-.stat-rooms {
-  border-top-color: #6366f1;
-}
-.stat-tenants {
-  border-top-color: #a855f7;
-}
-.stat-overdue-alert {
-  border-top-color: var(--danger);
-}
-.stat-overdue-alert strong {
-  color: var(--danger);
+/* Hero: two big stats beside the house photo. */
+.hero {
+  display: grid;
+  grid-template-columns: 1fr 1.1fr;
+  gap: 24px;
+  align-items: stretch;
+  padding: 24px;
+  margin: 8px 0 4px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
 }
 
-/* Occupancy progress bar inside the Rooms stat. */
+.hero-stats {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 28px;
+  padding: 8px 0;
+}
+
+.hero-stat span {
+  display: block;
+  font-size: .8rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+
+.hero-stat strong {
+  display: block;
+  font-size: 2rem;
+  margin: 2px 0 10px;
+}
+
+.hero-photo {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 220px;
+  object-fit: cover;
+  border-radius: 12px;
+}
+
+/* Progress bars (hero + Rooms stat). */
 .progress {
   height: 8px;
-  margin-top: 10px;
-  background: #e2e8f0;
+  background: #e7e0d4;
   border-radius: 999px;
   overflow: hidden;
 }
 .progress .fill {
   height: 100%;
-  background: #6366f1;
+  background: var(--text);
   border-radius: 999px;
+}
+.progress .fill-collected {
+  background: #1c1917;
+}
+.progress .fill-collect {
+  background: #d6c9a8;
+}
+.stat .progress {
+  margin-top: 10px;
+}
+
+/* Overdue stat turns red only when there are overdue bills. */
+.stat-overdue-alert strong {
+  color: var(--danger);
 }
 
 /* Lists: each card sizes to its own content instead of stretching to the tallest. */
@@ -109,53 +145,76 @@
   text-decoration: underline;
 }
 
-/* Monthly collection chart. */
-.chart-card {
+/* Vacant rooms as photo cards. */
+.rooms-card {
   margin-top: 20px;
 }
 
-.chart {
-  display: flex;
+.room-photos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 16px;
   padding: 8px 0 4px;
 }
 
-.bar-col {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
+.room-photo-card {
+  display: block;
+  overflow: hidden;
+  color: inherit;
+  text-decoration: none;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  transition: transform .15s, box-shadow .15s;
+}
+.room-photo-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(28, 25, 23, .12);
 }
 
-.bar-value {
+.room-photo-card img {
+  display: block;
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+}
+
+.room-photo-info {
+  padding: 14px 16px 16px;
+}
+
+/* Latest bills table. */
+.bills-card {
+  margin-top: 20px;
+}
+
+.bills-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 4px 0;
+}
+.bills-table th,
+.bills-table td {
+  padding: 10px 8px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+.bills-table th {
+  font-size: .8rem;
   font-weight: 700;
-  font-size: .9rem;
-  white-space: nowrap;
-}
-
-.bar-track {
-  display: flex;
-  align-items: flex-end;
-  height: 140px;
-  width: 100%;
-}
-
-.bar {
-  width: 100%;
-  max-width: 56px;
-  margin: 0 auto;
-  min-height: 4px;
-  background: #cbd5e1;
-  border-radius: 6px 6px 0 0;
-}
-.bar.current {
-  background: var(--primary);
-}
-
-.bar-label {
   color: var(--muted);
-  font-size: .85rem;
-  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+.bills-table tr:last-child td {
+  border-bottom: 0;
+}
+
+@media (max-width: 760px) {
+  .hero {
+    grid-template-columns: 1fr;
+  }
+  .hero-photo {
+    min-height: 180px;
+  }
 }

@@ -483,3 +483,6 @@ $RECYCLE.BIN/
 *.db
 *.db-shm
 *.db-wal
+
+# Uploaded room photos (user data, not part of the app)
+api/wwwroot/uploads/

@@ -4,7 +4,8 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { RouterLink } from '@angular/router';
 import { DashboardService } from '../../services/dashboard.service';
 import { BillService } from '../../services/bill.service';
-import { DashboardSummary, MonthlyCollection } from '../../models/dashboard';
+import { DashboardSummary, VacantRoom } from '../../models/dashboard';
+import { roomImageUrl } from '../../models/room';
 
 function currentMonth(): string {
   const d = new Date();
@@ -22,7 +23,6 @@ export class DashboardPage {
   private billService = inject(BillService);
 
   summary = signal<DashboardSummary | null>(null);
-  monthly = signal<MonthlyCollection[]>([]);
   error = signal('');
   message = signal('');
 
@@ -33,10 +33,6 @@ export class DashboardPage {
   load() {
     this.dashboardService.getSummary().subscribe({
       next: s => this.summary.set(s),
-      error: () => this.error.set('Could not load the dashboard. Is the API running?')
-    });
-    this.dashboardService.getMonthly().subscribe({
-      next: m => this.monthly.set(m),
       error: () => this.error.set('Could not load the dashboard. Is the API running?')
     });
   }
@@ -84,23 +80,19 @@ export class DashboardPage {
     return s.totalRooms === 0 ? 0 : Math.round((s.occupiedRooms / s.totalRooms) * 100);
   }
 
-  // '2026-06' -> 'Jun'
-  monthShort(month: string): string {
-    const [y, m] = month.split('-').map(Number);
-    return new Date(y, (m || 1) - 1, 1).toLocaleString('en-US', { month: 'short' });
+  // Share of this month's total (collected + to collect) that is already collected.
+  collectedShare(s: DashboardSummary): number {
+    const total = s.collectedThisMonth + s.toCollect;
+    return total === 0 ? 0 : Math.round((s.collectedThisMonth / total) * 100);
   }
 
-  isCurrentMonth(month: string): boolean {
-    return month === currentMonth();
+  toCollectShare(s: DashboardSummary): number {
+    return 100 - this.collectedShare(s);
   }
 
-  maxCollected(): number {
-    return Math.max(0, ...this.monthly().map(m => m.collected));
-  }
-
-  barHeight(m: MonthlyCollection): number {
-    const max = this.maxCollected();
-    return max === 0 ? 0 : Math.round((m.collected / max) * 100);
+  // Uploaded photo if there is one, else the photo for the room's type.
+  imageFor(room: VacantRoom): string {
+    return roomImageUrl(room);
   }
 
   private messageFrom(err: HttpErrorResponse): string {

@@ -22,6 +22,9 @@ function makeSummary(partial: Partial<DashboardSummary> = {}): DashboardSummary 
     recentPayments: [
       { id: 2, tenantName: 'Maria Santos', roomNo: '102', type: 'Rent', amount: 3000, paidOn: '2026-11-05' },
     ],
+    latestBills: [
+      { id: 3, tenantName: 'Maria Santos', roomNo: '102', type: 'Rent', amount: 3000, dueDate: '2026-11-05', status: 'Paid' },
+    ],
     ...partial,
   };
 }
@@ -83,25 +86,12 @@ describe('DashboardPage', () => {
     expect(component.occupancyPercent(makeSummary({ totalRooms: 0, occupiedRooms: 0 }))).toBe(0);
   });
 
-  it('should shorten month keys', () => {
-    expect(component.monthShort('2026-06')).toBe('Jun');
-    expect(component.monthShort('2026-11')).toBe('Nov');
-  });
-
-  it('should scale chart bars to the biggest month', () => {
-    component.monthly.set([
-      { month: '2026-10', collected: 100 },
-      { month: '2026-11', collected: 200 },
-    ]);
-    expect(component.maxCollected()).toBe(200);
-    expect(component.barHeight({ month: '2026-11', collected: 200 })).toBe(100);
-    expect(component.barHeight({ month: '2026-10', collected: 100 })).toBe(50);
-  });
-
-  it('should know the current month', () => {
-    const d = new Date();
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-    expect(component.isCurrentMonth(key)).toBe(true);
-    expect(component.isCurrentMonth('2000-01')).toBe(false);
+  it('should pick the right photo for a vacant room', () => {
+    expect(component.imageFor({ id: 5, roomNo: '105', monthlyRate: 3000, capacity: 1, type: 'Studio', imageUrl: null }))
+      .toBe('rooms/studio.webp');
+    expect(component.imageFor({ id: 5, roomNo: '105', monthlyRate: 3000, capacity: 1, type: 'Studio', imageUrl: '/uploads/rooms/5_abc.webp' }))
+      .toBe('http://localhost:5262/uploads/rooms/5_abc.webp');
+    expect(component.imageFor({ id: 5, roomNo: '105', monthlyRate: 3000, capacity: 1, type: null, imageUrl: null }))
+      .toBe('rooms/single.webp');
   });
 });

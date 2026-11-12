@@ -78,20 +78,48 @@ export class RoomsPage {
     if (draft.id) {
       const room = draft as Room;
       this.roomService.update(room).subscribe({
-        next: () => {
-          this.rooms.update(list => list.map(r => (r.id === room.id ? room : r)));
-          this.onCancel();
-        },
+        next: () => this.afterSave(room, draft),
         error: (err: HttpErrorResponse) => this.error.set(this.messageFrom(err))
       });
     } else {
       this.roomService.create(draft).subscribe({
-        next: created => {
-          this.rooms.update(list => [...list, created]);   // new array, no push()
-          this.onCancel();
-        },
+        next: created => this.afterSave(created, draft),
         error: (err: HttpErrorResponse) => this.error.set(this.messageFrom(err))
       });
+    }
+  }
+
+  // After the room itself is saved, upload a newly chosen photo
+  // (or remove the old one), then refresh the list and close the form.
+  private afterSave(room: Room, draft: RoomDraft) {
+    const finish = (saved: Room) => {
+      if (draft.id) {
+        this.rooms.update(list => list.map(r => (r.id === saved.id ? saved : r)));
+      } else {
+        this.rooms.update(list => [...list, saved]);   // new array, no push()
+      }
+      this.onCancel();
+    };
+
+    if (draft.imageFile) {
+      this.roomService.uploadImage(room.id, draft.imageFile).subscribe({
+        next: r => finish({ ...room, imageUrl: r.imageUrl }),
+        error: (err: HttpErrorResponse) => {
+          // The room was saved; only the photo failed.
+          this.error.set(this.messageFrom(err));
+          finish(room);
+        }
+      });
+    } else if (draft.removeImage) {
+      this.roomService.removeImage(room.id).subscribe({
+        next: () => finish({ ...room, imageUrl: null }),
+        error: (err: HttpErrorResponse) => {
+          this.error.set(this.messageFrom(err));
+          finish(room);
+        }
+      });
+    } else {
+      finish(room);
     }
   }
 
