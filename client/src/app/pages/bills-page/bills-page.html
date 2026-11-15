@@ -44,7 +44,7 @@
   @if (view() === 'collect') {
     <select [value]="filter()" (change)="onStatusChange($event)" aria-label="Filter by status">
       @for (f of filters; track f) {
-        <option [value]="f">{{ f === 'All' ? 'All statuses' : f }}</option>
+        <option [value]="f">{{ f === 'All' ? 'All status' : f }}</option>
       }
     </select>
   }

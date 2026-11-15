@@ -44,6 +44,7 @@
 .sidebar a svg { flex: none; }
 
 .sidebar-bottom {
+  position: relative;
   margin-top: auto;
   display: flex;
   flex-direction: column;
@@ -56,11 +57,20 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  width: 100%;
   padding: 8px 14px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  font: inherit;
   font-weight: 600;
   color: var(--muted);
+  text-align: left;
+  cursor: pointer;
 }
-.user-chip .avatar {
+.user-chip:hover { background: rgba(28, 25, 23, .06); color: var(--text); }
+.user-chip .avatar,
+.menu-header .avatar {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -70,6 +80,70 @@
   background: var(--primary);
   color: #fff;
   font-size: .9rem;
+}
+.user-chip .chevron {
+  margin-left: auto;
+  color: var(--muted);
+  transition: transform .15s;
+}
+.user-chip[aria-expanded="true"] .chevron { transform: rotate(180deg); }
+
+/* Account menu popup (opens above the chip, like Claude's account menu). */
+.menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: transparent;
+}
+.account-menu {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(100% + 8px);
+  z-index: 50;
+  padding: 6px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, .18);
+}
+.menu-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+}
+.menu-user {
+  display: flex;
+  flex-direction: column;
+}
+.menu-user strong { font-size: .95rem; }
+.menu-user span { color: var(--muted); font-size: .8rem; }
+.account-menu a,
+.account-menu button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: none;
+  text-align: left;
+  cursor: pointer;
+}
+.account-menu a:hover,
+.account-menu button:hover { background: rgba(28, 25, 23, .06); }
+.account-menu a svg,
+.account-menu button svg { flex: none; color: var(--muted); }
+.menu-divider {
+  height: 1px;
+  margin: 6px 4px;
+  background: var(--border);
 }
 
 .content {
@@ -101,5 +175,15 @@
     padding-top: 0;
     border-top: 0;
   }
-  .user-chip { display: none; }
+  /* On mobile the chip is avatar-only; the menu opens below it. */
+  .user-chip { width: auto; padding: 6px; }
+  .user-chip .user-name,
+  .user-chip .chevron { display: none; }
+  .account-menu {
+    left: auto;
+    right: 0;
+    bottom: auto;
+    top: calc(100% + 8px);
+    width: 240px;
+  }
 }
