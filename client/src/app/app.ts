@@ -12,6 +12,7 @@ export class App {
   protected auth = inject(AuthService);
 
   menuOpen = signal(false);
+  pendingLogout = signal(false);
 
   toggleMenu() {
     this.menuOpen.update(open => !open);
@@ -21,8 +22,17 @@ export class App {
     this.menuOpen.set(false);
   }
 
-  logout() {
+  onLogoutClick() {
     this.closeMenu();
+    this.pendingLogout.set(true);
+  }
+
+  onCancelLogout() {
+    this.pendingLogout.set(false);
+  }
+
+  onConfirmLogout() {
+    this.pendingLogout.set(false);
     this.auth.logout();
   }
 }

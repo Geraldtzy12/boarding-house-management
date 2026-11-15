@@ -70,7 +70,7 @@ describe('App', () => {
     expect(menu.textContent).toContain('Log out');
   });
 
-  it('should log out when Log out is clicked in the account menu', async () => {
+  it('should ask for confirmation before logging out', async () => {
     const fixture = TestBed.createComponent(App);
     fixture.detectChanges();
     await fixture.whenStable();
@@ -81,6 +81,51 @@ describe('App', () => {
 
     const buttons = Array.from(compiled.querySelectorAll('.account-menu button')) as HTMLButtonElement[];
     buttons.find(b => b.textContent?.trim() === 'Log out')?.click();
+    fixture.detectChanges();
+
+    const modal = compiled.querySelector('.confirm-modal') as HTMLElement;
+    expect(modal).toBeTruthy();
+    expect(modal.textContent).toContain('Log out?');
+    // Still logged in until the log out is confirmed.
+    expect(localStorage.getItem('bh_token')).toBe(fakeToken);
+  });
+
+  it('should log out when the log out is confirmed', async () => {
+    const fixture = TestBed.createComponent(App);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    (compiled.querySelector('.user-chip') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    const menuButtons = Array.from(compiled.querySelectorAll('.account-menu button')) as HTMLButtonElement[];
+    menuButtons.find(b => b.textContent?.trim() === 'Log out')?.click();
+    fixture.detectChanges();
+
+    const modalButtons = Array.from(compiled.querySelectorAll('.confirm-modal button')) as HTMLButtonElement[];
+    modalButtons.find(b => b.textContent?.trim() === 'Log out')?.click();
     expect(localStorage.getItem('bh_token')).toBeNull();
+  });
+
+  it('should stay logged in when the log out is cancelled', async () => {
+    const fixture = TestBed.createComponent(App);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    (compiled.querySelector('.user-chip') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    const menuButtons = Array.from(compiled.querySelectorAll('.account-menu button')) as HTMLButtonElement[];
+    menuButtons.find(b => b.textContent?.trim() === 'Log out')?.click();
+    fixture.detectChanges();
+
+    const modalButtons = Array.from(compiled.querySelectorAll('.confirm-modal button')) as HTMLButtonElement[];
+    modalButtons.find(b => b.textContent?.trim() === 'Cancel')?.click();
+    fixture.detectChanges();
+
+    expect(compiled.querySelector('.confirm-modal')).toBeNull();
+    expect(localStorage.getItem('bh_token')).toBe(fakeToken);
   });
 });

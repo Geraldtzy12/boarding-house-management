@@ -1,0 +1,51 @@
+.recycle-card {
+  max-width: 560px;
+}
+.recycle-card .muted {
+  color: var(--muted);
+}
+.recycle-card .actions {
+  margin-top: 20px;
+}
+
+/* Deleted bill rows. */
+.recycle-card .empty {
+  color: var(--muted);
+}
+.recycle-card .row {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+.recycle-card .row:last-of-type {
+  border-bottom: 0;
+}
+.recycle-card .row-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+.recycle-card .row-line.muted {
+  color: var(--muted);
+  font-size: .85rem;
+  margin-top: 2px;
+}
+.recycle-card .amount {
+  white-space: nowrap;
+}
+.recycle-card .row .actions {
+  margin-top: 8px;
+}
+.recycle-card .actions button.small {
+  padding: 6px 12px;
+  font-size: .9rem;
+}
+.recycle-card .actions button.link {
+  background: transparent;
+  color: var(--danger);
+  padding: 6px 8px;
+  font-size: .9rem;
+}
+.recycle-card .actions button.link:hover:not(:disabled) {
+  background: rgba(220, 38, 38, .08);
+}
