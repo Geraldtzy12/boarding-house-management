@@ -19,7 +19,7 @@ public class BillsController : ControllerBase
     {
         await RefreshOverdue();
 
-        var query = _db.Bills.Include(b => b.Tenant).AsQueryable();
+        var query = _db.Bills.Include(b => b.Tenant).Where(b => !b.IsDeleted).AsQueryable();
 
         if (Enum.TryParse<BillStatus>(status, true, out var parsed))
             query = query.Where(b => b.Status == parsed);
@@ -51,7 +51,7 @@ public class BillsController : ControllerBase
             return BadRequest("Choose an active tenant with a room.");
 
         var exists = await _db.Bills.AnyAsync(b =>
-            b.TenantId == request.TenantId && b.Month == request.Month && b.Type == request.Type);
+            !b.IsDeleted && b.TenantId == request.TenantId && b.Month == request.Month && b.Type == request.Type);
 
         if (exists)
             return Conflict($"{tenant.Name} already has a {request.Type} bill for {request.Month}.");
@@ -92,7 +92,7 @@ public class BillsController : ControllerBase
             .ToListAsync();
 
         var alreadyBilled = await _db.Bills
-            .Where(b => b.Month == monthKey && b.Type == BillType.Rent)
+            .Where(b => !b.IsDeleted && b.Month == monthKey && b.Type == BillType.Rent)
             .Select(b => b.TenantId)
             .ToListAsync();
 
@@ -130,7 +130,7 @@ public class BillsController : ControllerBase
     public async Task<IActionResult> Pay(int id)
     {
         var bill = await _db.Bills.FindAsync(id);
-        if (bill is null) return NotFound();
+        if (bill is null || bill.IsDeleted) return NotFound();
         if (bill.Status == BillStatus.Paid) return Conflict("This bill is already paid.");
 
         bill.Status = BillStatus.Paid;
@@ -139,15 +139,54 @@ public class BillsController : ControllerBase
         return NoContent();
     }
 
-    // DELETE /api/bills/1 — unpaid bills only.
-    // Paid bills are collection records, so they cannot be deleted.
+    // DELETE /api/bills/1 — soft delete: the bill goes to the Recycle Bin in Settings,
+    // where it can be restored or deleted forever. Any status can be deleted now,
+    // including Paid bills (history cleanup).
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {
         var bill = await _db.Bills.FindAsync(id);
+        if (bill is null || bill.IsDeleted) return NotFound();
+
+        bill.IsDeleted = true;
+        bill.DeletedOn = DateOnly.FromDateTime(DateTime.Today);
+        await _db.SaveChangesAsync();
+        return NoContent();
+    }
+
+    // GET /api/bills/deleted — the Recycle Bin.
+    [HttpGet("deleted")]
+    public async Task<ActionResult<List<Bill>>> GetDeleted()
+    {
+        return await _db.Bills
+            .Include(b => b.Tenant)
+            .Where(b => b.IsDeleted)
+            .OrderByDescending(b => b.DeletedOn)
+            .ThenByDescending(b => b.Id)
+            .ToListAsync();
+    }
+
+    // POST /api/bills/1/restore — bring a bill back from the Recycle Bin.
+    [HttpPost("{id}/restore")]
+    public async Task<IActionResult> Restore(int id)
+    {
+        var bill = await _db.Bills.FindAsync(id);
         if (bill is null) return NotFound();
-        if (bill.Status == BillStatus.Paid)
-            return Conflict("Paid bills cannot be deleted. They are part of the collection history.");
+        if (!bill.IsDeleted) return Conflict("This bill is not deleted.");
+
+        bill.IsDeleted = false;
+        bill.DeletedOn = null;
+        await _db.SaveChangesAsync();
+        return NoContent();
+    }
+
+    // DELETE /api/bills/1/permanent — delete forever from the Recycle Bin.
+    [HttpDelete("{id}/permanent")]
+    public async Task<IActionResult> DeletePermanent(int id)
+    {
+        var bill = await _db.Bills.FindAsync(id);
+        if (bill is null) return NotFound();
+        if (!bill.IsDeleted) return Conflict("Delete the bill first so it goes to the Recycle Bin.");
 
         _db.Bills.Remove(bill);
         await _db.SaveChangesAsync();
@@ -160,7 +199,7 @@ public class BillsController : ControllerBase
         var today = DateOnly.FromDateTime(DateTime.Today);
 
         var late = await _db.Bills
-            .Where(b => b.Status == BillStatus.Pending && b.DueDate < today)
+            .Where(b => !b.IsDeleted && b.Status == BillStatus.Pending && b.DueDate < today)
             .ToListAsync();
 
         foreach (var bill in late) bill.Status = BillStatus.Overdue;

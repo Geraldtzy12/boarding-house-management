@@ -26,8 +26,14 @@ namespace BoardingHouse.Api.Migrations
                     b.Property<decimal>("Amount")
                         .HasColumnType("TEXT");
 
+                    b.Property<DateOnly?>("DeletedOn")
+                        .HasColumnType("TEXT");
+
                     b.Property<DateOnly>("DueDate")
                         .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("Month")
                         .IsRequired()
@@ -55,7 +61,8 @@ namespace BoardingHouse.Api.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("TenantId", "Month", "Type")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("\"IsDeleted\" = 0");
 
                     b.ToTable("Bills");
                 });

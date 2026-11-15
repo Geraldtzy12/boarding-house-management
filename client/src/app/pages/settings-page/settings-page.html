@@ -13,3 +13,34 @@
     </button>
   </div>
 </div>
+
+<div class="card settings-card">
+  <div class="top"><h3>Recycle Bin</h3></div>
+  <p class="muted">Deleted bills stay here until you restore them or delete them forever.</p>
+
+  @if (deletedMessage()) {
+    <p class="message">{{ deletedMessage() }}</p>
+  }
+  @if (deletedError()) {
+    <p class="error">{{ deletedError() }}</p>
+  }
+
+  @for (b of deletedBills(); track b.id) {
+    <div class="row">
+      <div class="row-line">
+        <strong>{{ b.tenant?.name ?? '—' }}</strong>
+        <strong class="amount">{{ b.amount | currency:'PHP' }}</strong>
+      </div>
+      <div class="row-line muted">
+        <span>{{ b.type }} · Room {{ b.roomNo }} · {{ shortDate(b.dueDate) }}</span>
+        <span>Deleted {{ b.deletedOn ? shortDate(b.deletedOn) : '' }}</span>
+      </div>
+      <div class="actions">
+        <button class="small" (click)="onRestore(b.id)">Restore</button>
+        <button class="link" (click)="onDeleteForever(b.id)">Delete forever</button>
+      </div>
+    </div>
+  } @empty {
+    <p class="empty">Recycle Bin is empty.</p>
+  }
+</div>

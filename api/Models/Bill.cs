@@ -28,4 +28,6 @@ public class Bill
     public BillStatus Status { get; set; } = BillStatus.Pending;
     public DateOnly? PaidOn { get; set; }
     public string? Note { get; set; }
+    public bool IsDeleted { get; set; }        // nasa Recycle Bin (Settings) kapag true
+    public DateOnly? DeletedOn { get; set; }
 }

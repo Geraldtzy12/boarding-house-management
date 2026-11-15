@@ -67,7 +67,7 @@
             <td><span class="badge" [class.overdue]="b.status === 'Overdue'" [class.pending]="b.status === 'Pending'">{{ b.status }}</span></td>
             <td class="row-actions">
               <button class="small" (click)="onPay(b.id)">Mark as paid</button>
-              <button class="link" (click)="onRemove(b.id)">Delete</button>
+              <button class="link" (click)="onRemoveClick(b)">Delete</button>
             </td>
           </tr>
         } @empty {
@@ -93,7 +93,9 @@
               <td>{{ b.amount | currency:'PHP' }}</td>
               <td>{{ dueLabel(b) }}</td>
               <td><span class="badge" [class.overdue]="b.status === 'Overdue'" [class.pending]="b.status === 'Pending'">{{ b.status }}</span></td>
-              <td class="row-actions"></td>
+              <td class="row-actions">
+                <button class="link" (click)="onRemoveClick(b)">Delete</button>
+              </td>
             </tr>
           }
         </tbody>
@@ -102,4 +104,16 @@
   } @empty {
     <p>No paid bills yet.</p>
   }
+}
+
+@if (pendingDelete(); as b) {
+  <div class="confirm-modal" role="alertdialog" aria-label="Confirm delete">
+    <h3>Delete this bill?</h3>
+    <p>{{ b.tenant?.name ?? '—' }} · {{ b.type }} · Room {{ b.roomNo }} · {{ b.amount | currency:'PHP' }}</p>
+    <p class="muted">It will go to the Recycle Bin in Settings, where you can restore it.</p>
+    <div class="actions">
+      <button class="danger" (click)="onConfirmDelete()">Delete</button>
+      <button class="secondary" (click)="onCancelDelete()">Cancel</button>
+    </div>
+  </div>
 }

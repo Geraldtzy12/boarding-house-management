@@ -40,6 +40,7 @@ export class BillsPage {
   month = signal(currentMonth());
   view = signal<'collect' | 'history'>('collect');
   showForm = signal(false);
+  pendingDelete = signal<Bill | null>(null);   // bill na hinihintay i-confirm ang delete
   message = signal('');
   error = signal('');
 
@@ -147,11 +148,24 @@ export class BillsPage {
     });
   }
 
-  onRemove(id: number) {
-    if (!confirm('Delete this bill? This cannot be undone.')) return;
+  onRemoveClick(bill: Bill) {
+    this.pendingDelete.set(bill);
+  }
+
+  onCancelDelete() {
+    this.pendingDelete.set(null);
+  }
+
+  onConfirmDelete() {
+    const bill = this.pendingDelete();
+    this.pendingDelete.set(null);
+    if (!bill) return;
     this.error.set('');
-    this.billService.delete(id).subscribe({
-      next: () => this.load(),
+    this.billService.delete(bill.id).subscribe({
+      next: () => {
+        this.message.set('Bill moved to the Recycle Bin.');
+        this.load();
+      },
       error: (err: HttpErrorResponse) => this.error.set(this.messageFrom(err))
     });
   }

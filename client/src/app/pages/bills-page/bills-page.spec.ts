@@ -95,4 +95,19 @@ describe('BillsPage', () => {
     const pending = makeBill({ id: 3, status: 'Pending', dueDate: '2026-11-20' });
     expect(component.dueLabel(pending)).toBe('Nov 20, 2026');
   });
+
+  it('should open the delete confirmation and close it on cancel', () => {
+    const bill = makeBill({ id: 1 });
+    component.onRemoveClick(bill);
+    expect(component.pendingDelete()).toEqual(bill);
+
+    component.onCancelDelete();
+    expect(component.pendingDelete()).toBeNull();
+  });
+
+  it('should close the delete confirmation when the delete is confirmed', () => {
+    component.pendingDelete.set(makeBill({ id: 1 }));
+    component.onConfirmDelete();
+    expect(component.pendingDelete()).toBeNull();
+  });
 });

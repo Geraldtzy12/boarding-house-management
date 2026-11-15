@@ -22,7 +22,7 @@ public class DashboardController : ControllerBase
         var today = DateOnly.FromDateTime(DateTime.Today);
 
         var rooms = await _db.Rooms.ToListAsync();
-        var bills = await _db.Bills.Include(b => b.Tenant).ToListAsync();
+        var bills = await _db.Bills.Include(b => b.Tenant).Where(b => !b.IsDeleted).ToListAsync();
 
         var paidThisMonth = bills.Where(b =>
             b.Status == BillStatus.Paid &&
@@ -70,7 +70,7 @@ public class DashboardController : ControllerBase
         var today = DateOnly.FromDateTime(DateTime.Today);
 
         var late = await _db.Bills
-            .Where(b => b.Status == BillStatus.Pending && b.DueDate < today)
+            .Where(b => !b.IsDeleted && b.Status == BillStatus.Pending && b.DueDate < today)
             .ToListAsync();
 
         foreach (var bill in late) bill.Status = BillStatus.Overdue;

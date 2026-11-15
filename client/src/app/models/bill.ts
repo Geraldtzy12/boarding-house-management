@@ -15,4 +15,5 @@ export interface Bill {
   status: BillStatus;
   paidOn: string | null;
   note: string | null;
+  deletedOn?: string | null;   // set lang kapag nasa Recycle Bin
 }

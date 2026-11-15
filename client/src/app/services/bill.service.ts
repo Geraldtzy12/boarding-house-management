@@ -42,4 +42,17 @@ export class BillService {
   delete(id: number): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/${id}`);
   }
+
+  // Recycle Bin (Settings)
+  getDeleted(): Observable<Bill[]> {
+    return this.http.get<Bill[]>(`${this.baseUrl}/deleted`);
+  }
+
+  restore(id: number): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/${id}/restore`, {});
+  }
+
+  deletePermanent(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/${id}/permanent`);
+  }
 }

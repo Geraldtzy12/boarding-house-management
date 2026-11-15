@@ -7,19 +7,19 @@ public class BillsTests : ApiTestBase
 {
     private async Task<int> SetupTenantAsync(string name = "Juan Dela Cruz", string contact = "09170000001")
     {
-        var roomId = await CreateRoomAsync("101");
+        var roomId = await CreateRoomAsync("101", 2500, 2);
         return await CreateTenantAsync(name, contact, roomId);
     }
+
+    private static List<int> BillIds(string body) =>
+        JsonDocument.Parse(body).RootElement.EnumerateArray()
+            .Select(b => b.GetProperty("id").GetInt32()).ToList();
 
     [Fact]
     public async Task Generate_creates_a_rent_bill_for_the_active_tenant()
     {
         await AuthorizeAsync();
         var tenantId = await SetupTenantAsync();
-
-        // Bill for next month: its due date (the lease-start day, the 1st)
-        // is still in the future, so the bill stays Pending instead of
-        // flipping to Overdue when the list is read back.
         var month = DateOnly.FromDateTime(DateTime.Today).AddMonths(1).ToString("yyyy-MM");
 
         var (status, body) = await PostJsonAsync($"/api/bills/generate?month={month}", new { });
@@ -40,11 +40,12 @@ public class BillsTests : ApiTestBase
     {
         await AuthorizeAsync();
         await SetupTenantAsync();
+        var month = DateOnly.FromDateTime(DateTime.Today).AddMonths(1).ToString("yyyy-MM");
 
-        var (_, first) = await PostJsonAsync("/api/bills/generate?month=2026-10", new { });
+        var (_, first) = await PostJsonAsync($"/api/bills/generate?month={month}", new { });
         Assert.Equal(1, JsonDocument.Parse(first).RootElement.GetProperty("created").GetInt32());
 
-        var (status, second) = await PostJsonAsync("/api/bills/generate?month=2026-10", new { });
+        var (status, second) = await PostJsonAsync($"/api/bills/generate?month={month}", new { });
         Assert.Equal(HttpStatusCode.OK, status);
         Assert.Equal(0, JsonDocument.Parse(second).RootElement.GetProperty("created").GetInt32());
     }
@@ -98,16 +99,86 @@ public class BillsTests : ApiTestBase
     }
 
     [Fact]
-    public async Task Delete_paid_bill_is_blocked()
+    public async Task Delete_paid_bill_moves_it_to_the_recycle_bin()
     {
         await AuthorizeAsync();
         var tenantId = await SetupTenantAsync();
         var billId = await CreateBillAsync(tenantId, "Rent", "2026-11", 3500, "2026-11-01");
         await PostJsonAsync($"/api/bills/{billId}/pay", new { });
 
-        var (status, body) = await DeleteAsync($"/api/bills/{billId}");
-        Assert.Equal(HttpStatusCode.Conflict, status);
-        Assert.Contains("Paid bills cannot be deleted", body);
+        var (status, _) = await DeleteAsync($"/api/bills/{billId}");
+        Assert.Equal(HttpStatusCode.NoContent, status);
+
+        var (_, billsBody) = await GetAsync("/api/bills");
+        Assert.DoesNotContain(BillIds(billsBody), id => id == billId);
+
+        var (_, deletedBody) = await GetAsync("/api/bills/deleted");
+        Assert.Contains(BillIds(deletedBody), id => id == billId);
+    }
+
+    [Fact]
+    public async Task Restore_brings_a_deleted_bill_back()
+    {
+        await AuthorizeAsync();
+        var tenantId = await SetupTenantAsync();
+        var billId = await CreateBillAsync(tenantId, "Electricity", "2026-11", 850, "2026-11-15");
+        await DeleteAsync($"/api/bills/{billId}");
+
+        var (status, _) = await PostJsonAsync($"/api/bills/{billId}/restore", new { });
+        Assert.Equal(HttpStatusCode.NoContent, status);
+
+        var (_, billsBody) = await GetAsync("/api/bills");
+        Assert.Contains(BillIds(billsBody), id => id == billId);
+
+        var (_, deletedBody) = await GetAsync("/api/bills/deleted");
+        Assert.DoesNotContain(BillIds(deletedBody), id => id == billId);
+    }
+
+    [Fact]
+    public async Task Delete_forever_removes_a_bill_from_the_recycle_bin()
+    {
+        await AuthorizeAsync();
+        var tenantId = await SetupTenantAsync();
+        var billId = await CreateBillAsync(tenantId, "Electricity", "2026-11", 850, "2026-11-15");
+        await DeleteAsync($"/api/bills/{billId}");
+
+        var (status, _) = await DeleteAsync($"/api/bills/{billId}/permanent");
+        Assert.Equal(HttpStatusCode.NoContent, status);
+
+        var (_, deletedBody) = await GetAsync("/api/bills/deleted");
+        Assert.DoesNotContain(BillIds(deletedBody), id => id == billId);
+    }
+
+    [Fact]
+    public async Task Recreate_after_delete_is_allowed()
+    {
+        await AuthorizeAsync();
+        var tenantId = await SetupTenantAsync();
+        var billId = await CreateBillAsync(tenantId, "Electricity", "2026-11", 850, "2026-11-15");
+        await DeleteAsync($"/api/bills/{billId}");
+
+        var (status, _) = await PostJsonAsync("/api/bills",
+            new { tenantId, type = "Electricity", month = "2026-11", amount = 900, dueDate = "2026-11-15", note = (string?)null });
+        Assert.Equal(HttpStatusCode.OK, status);
+    }
+
+    [Fact]
+    public async Task Generate_after_delete_recreates_the_rent_bill()
+    {
+        await AuthorizeAsync();
+        await SetupTenantAsync();
+        var month = DateOnly.FromDateTime(DateTime.Today).AddMonths(1).ToString("yyyy-MM");
+
+        var (_, first) = await PostJsonAsync($"/api/bills/generate?month={month}", new { });
+        Assert.Equal(1, JsonDocument.Parse(first).RootElement.GetProperty("created").GetInt32());
+
+        var (_, billsBody) = await GetAsync($"/api/bills?month={month}");
+        var billId = JsonDocument.Parse(billsBody).RootElement[0].GetProperty("id").GetInt32();
+        await DeleteAsync($"/api/bills/{billId}");
+
+        var (status, second) = await PostJsonAsync($"/api/bills/generate?month={month}", new { });
+        Assert.Equal(HttpStatusCode.OK, status);
+        Assert.Equal(1, JsonDocument.Parse(second).RootElement.GetProperty("created").GetInt32());
     }
 
     [Fact]
