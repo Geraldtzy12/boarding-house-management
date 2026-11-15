@@ -26,4 +26,21 @@ describe('LoginPage', () => {
     component.onSubmit();
     expect(component.error()).toBe('Enter your username and password.');
   });
+
+  it('should toggle the password between hidden and visible', () => {
+    fixture.detectChanges();
+    const compiled = fixture.nativeElement as HTMLElement;
+    const input = compiled.querySelector('input[name="password"]') as HTMLInputElement;
+    const eye = compiled.querySelector('.eye') as HTMLButtonElement;
+
+    expect(input.type).toBe('password');
+    eye.click();
+    fixture.detectChanges();
+    expect(input.type).toBe('text');
+    expect(eye.getAttribute('aria-label')).toBe('Hide password');
+    eye.click();
+    fixture.detectChanges();
+    expect(input.type).toBe('password');
+    expect(eye.getAttribute('aria-label')).toBe('Show password');
+  });
 });

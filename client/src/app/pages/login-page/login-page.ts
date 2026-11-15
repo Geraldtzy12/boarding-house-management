@@ -16,11 +16,16 @@ export class LoginPage {
 
   username = '';
   password = '';
+  showPassword = signal(false);
   error = signal('');
   busy = signal(false);
 
   constructor() {
     if (this.auth.loggedIn()) this.router.navigate(['/rooms']);
+  }
+
+  togglePasswordVisibility() {
+    this.showPassword.update(v => !v);
   }
 
   onSubmit() {
