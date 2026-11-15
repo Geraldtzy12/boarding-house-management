@@ -88,3 +88,7 @@ app.UseAuthorization();
 app.MapControllers().RequireAuthorization();
 
 app.Run();
+
+// Makes the top-level Program class visible to the API test project
+// (WebApplicationFactory needs a public entry point).
+public partial class Program { }
