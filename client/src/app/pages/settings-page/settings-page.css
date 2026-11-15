@@ -1,0 +1,9 @@
+.settings-card {
+  max-width: 560px;
+}
+.settings-card .muted {
+  color: var(--muted);
+}
+.settings-card .actions {
+  margin-top: 20px;
+}

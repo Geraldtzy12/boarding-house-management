@@ -10,8 +10,4 @@ import { AuthService } from './services/auth.service';
 })
 export class App {
   protected auth = inject(AuthService);
-
-  logout() {
-    this.auth.logout();
-  }
 }

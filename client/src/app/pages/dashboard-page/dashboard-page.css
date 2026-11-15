@@ -14,14 +14,22 @@
   flex-wrap: wrap;
   padding: 4px 0 12px;
 }
-.actions button.secondary {
+/* Quick actions under the title (Option A: all white, with icons). */
+.actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   background: #fff;
   color: var(--text);
   border: 1px solid var(--border);
 }
-.actions button.secondary:hover:not(:disabled) {
+.actions button:hover:not(:disabled) {
   background: #f5f1ea;
 }
+.actions button svg {
+  flex: none;
+}
+
 
 /* Hero: two big stats beside the house photo. */
 .hero {
