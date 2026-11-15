@@ -3,7 +3,7 @@
   <div class="generate">
     <button (click)="onAddClick()">+ Add bill</button>
     <app-month-picker [(value)]="month" />
-    <button (click)="onGenerate()" [disabled]="!month()">Generate rent bills</button>
+    <button class="secondary" (click)="onGenerate()" [disabled]="!month()">Generate rent bills</button>
   </div>
 </div>
 
@@ -33,33 +33,71 @@
   <button [class.active]="view() === 'history'" (click)="view.set('history')">History ({{ paidCount() }})</button>
 </div>
 
-<div class="filters">
-  @for (t of typeFilters; track t) {
-    <button [class.active]="typeFilter() === t" (click)="typeFilter.set(t)">{{ t }}</button>
+<div class="filters-bar">
+  <input type="search" placeholder="Search tenant or room..." aria-label="Search bills"
+    [value]="search()" (input)="onSearch($event)" />
+  <select [value]="typeFilter()" (change)="onTypeChange($event)" aria-label="Filter by type">
+    @for (t of typeFilters; track t) {
+      <option [value]="t">{{ t === 'All' ? 'All types' : t }}</option>
+    }
+  </select>
+  @if (view() === 'collect') {
+    <select [value]="filter()" (change)="onStatusChange($event)" aria-label="Filter by status">
+      @for (f of filters; track f) {
+        <option [value]="f">{{ f === 'All' ? 'All statuses' : f }}</option>
+      }
+    </select>
   }
 </div>
 
 @if (view() === 'collect') {
-  <div class="filters">
-    @for (f of filters; track f) {
-      <button [class.active]="filter() === f" (click)="filter.set(f)">{{ f }}</button>
-    }
-  </div>
-
-  <div class="grid">
-    @for (b of filtered(); track b.id) {
-      <app-bill-card [bill]="b" (pay)="onPay($event)" (remove)="onRemove($event)" />
-    } @empty {
-      <p>No bills to collect.</p>
-    }
+  <div class="table-wrap">
+    <table class="bills-table">
+      <thead>
+        <tr><th>Tenant</th><th>Room</th><th>Type</th><th>Amount</th><th>Due</th><th>Status</th><th>Actions</th></tr>
+      </thead>
+      <tbody>
+        @for (b of filtered(); track b.id) {
+          <tr>
+            <td [title]="b.note ?? ''">{{ b.tenant?.name ?? '—' }}</td>
+            <td>{{ b.roomNo }}</td>
+            <td>{{ b.type }}</td>
+            <td>{{ b.amount | currency:'PHP' }}</td>
+            <td>{{ dueLabel(b) }}</td>
+            <td><span class="badge" [class.overdue]="b.status === 'Overdue'" [class.pending]="b.status === 'Pending'">{{ b.status }}</span></td>
+            <td class="row-actions">
+              <button class="small" (click)="onPay(b.id)">Mark as paid</button>
+              <button class="link" (click)="onRemove(b.id)">Delete</button>
+            </td>
+          </tr>
+        } @empty {
+          <tr><td colspan="7" class="empty">No bills to collect.</td></tr>
+        }
+      </tbody>
+    </table>
   </div>
 } @else {
   @for (g of paidByMonth(); track g.month) {
     <h3>{{ g.label }} · {{ g.bills.length }} bills · {{ g.total | currency:'PHP' }} collected</h3>
-    <div class="grid">
-      @for (b of g.bills; track b.id) {
-        <app-bill-card [bill]="b" (pay)="onPay($event)" (remove)="onRemove($event)" />
-      }
+    <div class="table-wrap">
+      <table class="bills-table">
+        <thead>
+          <tr><th>Tenant</th><th>Room</th><th>Type</th><th>Amount</th><th>Due</th><th>Status</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+          @for (b of g.bills; track b.id) {
+            <tr>
+              <td [title]="b.note ?? ''">{{ b.tenant?.name ?? '—' }}</td>
+              <td>{{ b.roomNo }}</td>
+              <td>{{ b.type }}</td>
+              <td>{{ b.amount | currency:'PHP' }}</td>
+              <td>{{ dueLabel(b) }}</td>
+              <td><span class="badge" [class.overdue]="b.status === 'Overdue'" [class.pending]="b.status === 'Pending'">{{ b.status }}</span></td>
+              <td class="row-actions"></td>
+            </tr>
+          }
+        </tbody>
+      </table>
     </div>
   } @empty {
     <p>No paid bills yet.</p>

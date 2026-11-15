@@ -5,7 +5,6 @@ import { BillService, BillPayload } from '../../services/bill.service';
 import { TenantService } from '../../services/tenant.service';
 import { Bill, BillStatus, BillType } from '../../models/bill';
 import { Tenant } from '../../models/tenant';
-import { BillCard } from '../../components/bill-card/bill-card';
 import { BillForm } from '../../components/bill-form/bill-form';
 import { MonthPicker } from '../../components/month-picker/month-picker';
 
@@ -22,7 +21,7 @@ function monthLabel(month: string): string {
 
 @Component({
   selector: 'app-bills-page',
-  imports: [BillCard, BillForm, MonthPicker, CurrencyPipe],
+  imports: [BillForm, MonthPicker, CurrencyPipe],
   templateUrl: './bills-page.html',
   styleUrl: './bills-page.css'
 })
@@ -37,6 +36,7 @@ export class BillsPage {
   tenants = signal<Tenant[]>([]);
   filter = signal<'All' | BillStatus>('All');
   typeFilter = signal<'All' | BillType>('All');
+  search = signal('');
   month = signal(currentMonth());
   view = signal<'collect' | 'history'>('collect');
   showForm = signal(false);
@@ -46,14 +46,16 @@ export class BillsPage {
   // only active tenants with a room
   billableTenants = computed(() => this.tenants().filter(t => t.roomId !== null));
 
-  // To collect: unpaid bills only, by status + type
+  // To collect: unpaid bills only, by search + status + type
   filtered = computed(() => {
     const status = this.filter();
     const type = this.typeFilter();
+    const q = this.search().trim().toLowerCase();
     return this.bills().filter(b =>
       b.status !== 'Paid' &&
       (status === 'All' || b.status === status) &&
-      (type === 'All' || b.type === type)
+      (type === 'All' || b.type === type) &&
+      (q === '' || this.matchesSearch(b, q))
     );
   });
 
@@ -62,8 +64,10 @@ export class BillsPage {
   // History: paid bills, grouped by month (newest first), with totals
   paidByMonth = computed(() => {
     const type = this.typeFilter();
+    const q = this.search().trim().toLowerCase();
     const paid = this.bills()
-      .filter(b => b.status === 'Paid' && (type === 'All' || b.type === type))
+      .filter(b => b.status === 'Paid' && (type === 'All' || b.type === type) &&
+        (q === '' || this.matchesSearch(b, q)))
       .sort((a, b) => b.month.localeCompare(a.month) || b.dueDate.localeCompare(a.dueDate));
 
     const groups: { month: string; label: string; total: number; bills: Bill[] }[] = [];
@@ -150,6 +154,48 @@ export class BillsPage {
       next: () => this.load(),
       error: (err: HttpErrorResponse) => this.error.set(this.messageFrom(err))
     });
+  }
+
+  onSearch(event: Event) {
+    this.search.set((event.target as HTMLInputElement).value);
+  }
+
+  onTypeChange(event: Event) {
+    this.typeFilter.set((event.target as HTMLSelectElement).value as 'All' | BillType);
+  }
+
+  onStatusChange(event: Event) {
+    this.filter.set((event.target as HTMLSelectElement).value as 'All' | BillStatus);
+  }
+
+  // '2026-11-05' -> 'Nov 5, 2026'
+  shortDate(date: string): string {
+    const [y, m, d] = date.split('-').map(Number);
+    return new Date(y, (m || 1) - 1, d || 1)
+      .toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+
+  // '2026-11-01' -> '10 days overdue' (or '1 day overdue' / 'due today')
+  overdueLabel(dueDate: string): string {
+    const [y, m, d] = dueDate.split('-').map(Number);
+    const due = new Date(y, (m || 1) - 1, d || 1);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const days = Math.round((today.getTime() - due.getTime()) / 86400000);
+    if (days <= 0) return 'due today';
+    return days === 1 ? '1 day overdue' : `${days} days overdue`;
+  }
+
+  // Due column: date + how overdue it is, or when it was paid.
+  dueLabel(b: Bill): string {
+    if (b.status === 'Paid' && b.paidOn) return `Paid ${this.shortDate(b.paidOn)}`;
+    if (b.status === 'Overdue') return `${this.shortDate(b.dueDate)} · ${this.overdueLabel(b.dueDate)}`;
+    return this.shortDate(b.dueDate);
+  }
+
+  private matchesSearch(b: Bill, q: string): boolean {
+    return (b.tenant?.name ?? '').toLowerCase().includes(q) ||
+      b.roomNo.toLowerCase().includes(q);
   }
 
   private messageFrom(err: HttpErrorResponse): string {
