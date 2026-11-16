@@ -3,7 +3,7 @@
   <button (click)="onAddClick()">+ Add Room</button>
 </div>
 
-@if (error()) {
+@if (error() && !showForm()) {
   <p class="error">{{ error() }}</p>
 }
 
