@@ -1,0 +1,30 @@
+/* The save error sits at the top of the form, so pin it there while
+   scrolling — otherwise it scrolls out of view and the only trace of
+   it is the dimmed page banner behind the modal. */
+.form .error {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+/* Contact field: +63 prefix shown on the field, digits typed after it. */
+.phone-field {
+  display: flex;
+  align-items: stretch;
+}
+.phone-prefix {
+  display: inline-flex;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid #cbd5e1;
+  border-right: 0;
+  border-radius: 10px 0 0 10px;
+  background: #f5f1ea;
+  color: var(--muted);
+  font-weight: 600;
+}
+.phone-field input {
+  flex: 1;
+  min-width: 0;
+  border-radius: 0 10px 10px 0;
+}

@@ -100,6 +100,7 @@ public class TenantsController : ControllerBase
 
         if (name.Length == 0) return (400, "Enter a name for the tenant.");
         if (contact.Length == 0) return (400, "Enter a contact number for the tenant.");
+        if (contact.Length != 11) return (400, "Contact number must be 11 digits.");
 
         var activeTenants = await _db.Tenants
             .Where(t => t.IsActive && (tenantId == null || t.Id != tenantId))
@@ -137,8 +138,6 @@ public class TenantsController : ControllerBase
     // Occupied if it has a tenant, Vacant if not
     private async Task SyncRoomStatus(int? roomId)
     {
-        if (roomId is null) return;
-
         var room = await _db.Rooms.FindAsync(roomId);
         if (room is null) return;
 

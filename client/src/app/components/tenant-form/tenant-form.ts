@@ -43,9 +43,18 @@ export class TenantForm {
   isRoomDisabled = (room: Room): boolean =>
     room.status === 'Occupied' && room.id !== this.tenant()?.roomId;
 
+  // Contact is digits only (09XXXXXXXXX, 11 digits); the +63 is just shown on the field.
+  contactDigits = computed(() => this.contact().replace(/\D/g, ''));
+
+  contactError = computed(() => {
+    const digits = this.contactDigits();
+    if (digits.length === 0 || digits.length === 11) return '';
+    return 'Contact number must be 11 digits.';
+  });
+
   canSave = computed(() =>
     this.name().trim().length > 0 &&
-    this.contact().trim().length > 0 &&
+    this.contactDigits().length === 11 &&
     this.leaseStart().length > 0 &&
     !this.selectedRoomOccupied()
   );
@@ -54,10 +63,14 @@ export class TenantForm {
     effect(() => {
       const t = this.tenant();
       this.name.set(t?.name ?? '');
-      this.contact.set(t?.contact ?? '');
+      this.contact.set((t?.contact ?? '').replace(/\D/g, ''));
       this.roomId.set(t?.roomId ?? null);
       this.leaseStart.set(t?.leaseStart ?? today());
     });
+  }
+
+  onContactChanged(value: string) {
+    this.contact.set(value.replace(/\D/g, ''));
   }
 
   submit() {
@@ -65,7 +78,7 @@ export class TenantForm {
     this.saved.emit({
       id: this.tenant()?.id,
       name: this.name().trim(),
-      contact: this.contact().trim(),
+      contact: this.contactDigits(),
       roomId: this.roomId(),
       leaseStart: this.leaseStart()
     });

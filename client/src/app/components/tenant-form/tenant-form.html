@@ -10,8 +10,15 @@
   </label>
 
   <label>Contact
-    <input name="contact" [(ngModel)]="contact" />
+    <span class="phone-field">
+      <span class="phone-prefix">+63</span>
+      <input name="contact" [ngModel]="contact()" (ngModelChange)="onContactChanged($event)" inputmode="numeric" autocomplete="tel" placeholder="09123456789" />
+    </span>
   </label>
+
+  @if (contactError()) {
+    <p class="error">{{ contactError() }}</p>
+  }
 
   <label>Room
     <select name="roomId" [(ngModel)]="roomId">

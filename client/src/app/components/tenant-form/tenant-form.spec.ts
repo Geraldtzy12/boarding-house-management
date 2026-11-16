@@ -52,4 +52,42 @@ describe('TenantForm', () => {
     await fixture.whenStable();
     expect(fixture.nativeElement.querySelector('.error')?.textContent).toContain('There is already a tenant named Juan.');
   });
+
+  it('should show the +63 prefix on the contact field', () => {
+    expect(fixture.nativeElement.querySelector('.phone-prefix')?.textContent).toContain('+63');
+  });
+
+  it('should keep only digits in the contact number', () => {
+    component.onContactChanged('0921-302-133');
+    expect(component.contact()).toBe('0921302133');
+  });
+
+  it('should show an error when the contact number is not 11 digits', () => {
+    component.onContactChanged('091700000');
+    expect(component.contactError()).toBe('Contact number must be 11 digits.');
+    expect(component.canSave()).toBe(false);
+
+    component.onContactChanged('0917000000111');
+    expect(component.contactError()).toBe('Contact number must be 11 digits.');
+    expect(component.canSave()).toBe(false);
+
+    component.onContactChanged('09170000001');
+    expect(component.contactError()).toBe('');
+  });
+
+  it('should only allow saving with an 11-digit contact number', () => {
+    let draft: { contact: string } | undefined;
+    component.saved.subscribe(d => draft = d);
+    component.name.set('Juan Dela Cruz');
+    component.leaseStart.set('2026-11-01');
+
+    component.onContactChanged('091700000');
+    component.submit();
+    expect(draft).toBeUndefined();
+
+    component.onContactChanged('09170000001');
+    expect(component.canSave()).toBe(true);
+    component.submit();
+    expect(draft?.contact).toBe('09170000001');
+  });
 });

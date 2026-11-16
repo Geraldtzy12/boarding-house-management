@@ -25,7 +25,7 @@ public class TenantsTests : ApiTestBase
         await CreateTenantAsync("ANgel", "09103029939", room1);
 
         var (status, body) = await PostJsonAsync("/api/tenants",
-            new { name = "angel", contact = "091213233", roomId = room2, leaseStart = "2026-11-11", isActive = true });
+            new { name = "angel", contact = "09121323301", roomId = room2, leaseStart = "2026-11-11", isActive = true });
         Assert.Equal(HttpStatusCode.Conflict, status);
         Assert.Contains("There is already a tenant named angel.", body);
     }
@@ -49,10 +49,10 @@ public class TenantsTests : ApiTestBase
         await AuthorizeAsync();
         var room1 = await CreateRoomAsync("101");
         var room2 = await CreateRoomAsync("102");
-        await CreateTenantAsync("Gerald Bonalos", "0921302133", room1);
+        await CreateTenantAsync("Gerald Bonalos", "09213021330", room1);
 
         var (status, body) = await PostJsonAsync("/api/tenants",
-            new { name = "Maria", contact = "0921302133", roomId = room2, leaseStart = "2026-11-11", isActive = true });
+            new { name = "Maria", contact = "09213021330", roomId = room2, leaseStart = "2026-11-11", isActive = true });
         Assert.Equal(HttpStatusCode.Conflict, status);
         Assert.Contains("already used by Gerald Bonalos", body);
     }
@@ -63,10 +63,10 @@ public class TenantsTests : ApiTestBase
         await AuthorizeAsync();
         var room1 = await CreateRoomAsync("101");
         var room2 = await CreateRoomAsync("102");
-        await CreateTenantAsync("Gerald Bonalos", "0921302133", room1);
+        await CreateTenantAsync("Gerald Bonalos", "09213021330", room1);
 
         var (status, _) = await PostJsonAsync("/api/tenants",
-            new { name = "Maria", contact = "0921-302-133", roomId = room2, leaseStart = "2026-11-11", isActive = true });
+            new { name = "Maria", contact = "0921-302-1330", roomId = room2, leaseStart = "2026-11-11", isActive = true });
         Assert.Equal(HttpStatusCode.Conflict, status);
     }
 
@@ -77,10 +77,10 @@ public class TenantsTests : ApiTestBase
         var room1 = await CreateRoomAsync("101");
         var room2 = await CreateRoomAsync("102");
         await CreateTenantAsync("Angel", "09170000001", room1);
-        var geraldId = await CreateTenantAsync("Gerald Bonalos", "0921302133", room2);
+        var geraldId = await CreateTenantAsync("Gerald Bonalos", "09213021330", room2);
 
         var (status, _) = await PutJsonAsync($"/api/tenants/{geraldId}",
-            new { id = geraldId, name = "angel", contact = "0921302133", roomId = room2, leaseStart = "2026-11-09", isActive = true });
+            new { id = geraldId, name = "angel", contact = "09213021330", roomId = room2, leaseStart = "2026-11-09", isActive = true });
         Assert.Equal(HttpStatusCode.Conflict, status);
     }
 
@@ -89,10 +89,10 @@ public class TenantsTests : ApiTestBase
     {
         await AuthorizeAsync();
         var roomId = await CreateRoomAsync("101");
-        var tenantId = await CreateTenantAsync("Gerald Bonalos", "0921302133", roomId);
+        var tenantId = await CreateTenantAsync("Gerald Bonalos", "09213021330", roomId);
 
         var (status, _) = await PutJsonAsync($"/api/tenants/{tenantId}",
-            new { id = tenantId, name = "Gerald Bonalos", contact = "0921302133", roomId, leaseStart = "2026-11-09", isActive = true });
+            new { id = tenantId, name = "Gerald Bonalos", contact = "09213021330", roomId, leaseStart = "2026-11-09", isActive = true });
         Assert.Equal(HttpStatusCode.NoContent, status);
     }
 
@@ -123,7 +123,7 @@ public class TenantsTests : ApiTestBase
         var (_, roomsBody) = await GetAsync($"/api/rooms/{room1}");
         Assert.Equal("Vacant", JsonDocument.Parse(roomsBody).RootElement.GetProperty("status").GetString());
 
-        await CreateTenantAsync("angel", "091213233", room2);
+        await CreateTenantAsync("angel", "09121323301", room2);
     }
 
     [Fact]
@@ -139,5 +139,21 @@ public class TenantsTests : ApiTestBase
         var (noContact, _) = await PostJsonAsync("/api/tenants",
             new { name = "Maria", contact = "", roomId, leaseStart = "2026-11-11", isActive = true });
         Assert.Equal(HttpStatusCode.BadRequest, noContact);
+    }
+
+    [Fact]
+    public async Task Create_tenant_with_short_or_long_contact_returns_400()
+    {
+        await AuthorizeAsync();
+        var roomId = await CreateRoomAsync("101");
+
+        var (shortNumber, shortBody) = await PostJsonAsync("/api/tenants",
+            new { name = "Maria", contact = "091700000", roomId, leaseStart = "2026-11-11", isActive = true });
+        Assert.Equal(HttpStatusCode.BadRequest, shortNumber);
+        Assert.Contains("11 digits", shortBody);
+
+        var (longNumber, _) = await PostJsonAsync("/api/tenants",
+            new { name = "Maria", contact = "0917000000111", roomId, leaseStart = "2026-11-11", isActive = true });
+        Assert.Equal(HttpStatusCode.BadRequest, longNumber);
     }
 }
