@@ -30,12 +30,11 @@
   flex: none;
 }
 
-
 /* Hero: two big stats beside the house photo. */
 .hero {
   display: grid;
   grid-template-columns: 1fr 1.1fr;
-  gap: 24px;
+  gap: 36px;
   align-items: stretch;
   padding: 24px;
   margin: 8px 0 4px;

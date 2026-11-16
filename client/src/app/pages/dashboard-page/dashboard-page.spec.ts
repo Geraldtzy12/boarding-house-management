@@ -65,17 +65,6 @@ describe('DashboardPage', () => {
     expect(component.shortDate('2026-11-05')).toBe('Nov 5, 2026');
   });
 
-  it('should label how overdue a bill is', () => {
-    const tenDaysAgo = new Date();
-    tenDaysAgo.setDate(tenDaysAgo.getDate() - 10);
-    const key = `${tenDaysAgo.getFullYear()}-${String(tenDaysAgo.getMonth() + 1).padStart(2, '0')}-${String(tenDaysAgo.getDate()).padStart(2, '0')}`;
-    expect(component.overdueLabel(key)).toBe('10 days overdue');
-
-    const today = new Date();
-    const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-    expect(component.overdueLabel(todayKey)).toBe('due today');
-  });
-
   it('should label beds', () => {
     expect(component.bedLabel(1)).toBe('1 bed');
     expect(component.bedLabel(2)).toBe('2 beds');

@@ -26,12 +26,12 @@ body {
 }
 
 /* ---------- Layout ---------- */
+app-rooms-page,
+app-tenants-page,
 app-bills-page,
 app-dashboard-page,
 app-settings-page,
 app-recycle-bin-page {
-
-
   display: block;
   max-width: 1240px;
   margin: 0 auto;
@@ -51,7 +51,7 @@ app-recycle-bin-page {
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 20px;
+  gap: 36px;
   padding: 16px 0;
 }
 .grid > p { grid-column: 1 / -1; text-align: center; color: var(--muted); padding: 40px 0; }
@@ -61,7 +61,7 @@ app-recycle-bin-page {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 22px;
+  padding: 30px;
   box-shadow: var(--shadow);
   transition: transform .15s, box-shadow .15s;
 }

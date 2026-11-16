@@ -61,17 +61,6 @@ export class DashboardPage {
       .toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   }
 
-  // '2026-11-01' -> '10 days overdue' (or '1 day overdue' / 'due today')
-  overdueLabel(dueDate: string): string {
-    const [y, m, d] = dueDate.split('-').map(Number);
-    const due = new Date(y, (m || 1) - 1, d || 1);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const days = Math.round((today.getTime() - due.getTime()) / 86400000);
-    if (days <= 0) return 'due today';
-    return days === 1 ? '1 day overdue' : `${days} days overdue`;
-  }
-
   bedLabel(capacity: number): string {
     return capacity === 1 ? '1 bed' : `${capacity} beds`;
   }
