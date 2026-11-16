@@ -1,0 +1,8 @@
+<div class="confirm-modal" role="alertdialog" [attr.aria-label]="title()">
+  <h3>{{ title() }}</h3>
+  <ng-content />
+  <div class="actions">
+    <button [class.danger]="danger()" (click)="confirmed.emit()">{{ confirmLabel() }}</button>
+    <button class="secondary" (click)="cancelled.emit()">{{ cancelLabel() }}</button>
+  </div>
+</div>

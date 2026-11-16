@@ -37,4 +37,13 @@ describe('RoomForm', () => {
     expect(draft?.roomNo).toBe('201');
     expect(draft?.type).toBe('Studio');
   });
+
+  it('should emit cancelled when Escape is pressed inside the form', () => {
+    let cancelled = false;
+    component.cancelled.subscribe(() => cancelled = true);
+    fixture.detectChanges();
+    const form = fixture.nativeElement.querySelector('form') as HTMLElement;
+    form.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    expect(cancelled).toBe(true);
+  });
 });

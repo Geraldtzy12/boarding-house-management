@@ -146,41 +146,6 @@
   background: var(--border);
 }
 
-/* Log out confirmation modal (centered, dim backdrop like the form modal). */
-.confirm-modal {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 100;
-  width: min(440px, 92vw);
-  display: grid;
-  gap: 12px;
-  padding: 28px;
-  background: var(--surface);
-  border-radius: 18px;
-  box-shadow: 0 0 0 100vmax rgba(28, 25, 23, .55), 0 24px 60px rgba(0, 0, 0, .35);
-}
-.confirm-modal h3 {
-  margin: 0;
-  font-size: 1.4rem;
-}
-.confirm-modal p {
-  margin: 0;
-}
-.confirm-modal .actions {
-  display: flex;
-  gap: 12px;
-  margin-top: 8px;
-}
-.confirm-modal button.secondary {
-  background: #fff;
-  color: var(--text);
-  border: 1px solid var(--border);
-}
-.confirm-modal button.secondary:hover:not(:disabled) {
-  background: #f5f1ea;
-}
 
 .content {
   flex: 1;

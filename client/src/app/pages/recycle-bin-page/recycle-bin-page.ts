@@ -1,7 +1,10 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { catchError, of, Subject, switchMap } from 'rxjs';
 import { CurrencyPipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { BillService } from '../../services/bill.service';
+import { NotificationService } from '../../services/notification.service';
 import { Bill } from '../../models/bill';
 
 @Component({
@@ -10,30 +13,36 @@ import { Bill } from '../../models/bill';
   templateUrl: './recycle-bin-page.html',
   styleUrl: './recycle-bin-page.css'
 })
-export class RecycleBinPage {
+export class RecycleBinPage implements OnInit {
   private billService = inject(BillService);
-
-  deletedBills = signal<Bill[]>([]);
-  deletedMessage = signal('');
+  private notification = inject(NotificationService);
   deletedError = signal('');
 
-  constructor() {
+  // Page load as a STREAM (Week 5: toSignal + switchMap). loadDeleted() re-fires it.
+  private reload$ = new Subject<void>();
+  deletedBills = toSignal(this.reload$.pipe(
+    switchMap(() => this.billService.getDeleted().pipe(
+      catchError(() => {
+        this.deletedError.set('Could not load the Recycle Bin. Is the API running?');
+        return of([]);
+      })
+    ))
+  ), { initialValue: [] as Bill[] });
+
+  // Initialization belongs here, not in the constructor (Week 4: ngOnInit).
+  ngOnInit() {
     this.loadDeleted();
   }
 
   loadDeleted() {
-    this.billService.getDeleted().subscribe({
-      next: b => this.deletedBills.set(b),
-      error: () => this.deletedError.set('Could not load the Recycle Bin. Is the API running?')
-    });
+    this.reload$.next();
   }
 
   onRestore(id: number) {
-    this.deletedMessage.set('');
     this.deletedError.set('');
     this.billService.restore(id).subscribe({
       next: () => {
-        this.deletedMessage.set('Bill restored.');
+        this.notification.success('Bill restored.');
         this.loadDeleted();
       },
       error: (err: HttpErrorResponse) => this.deletedError.set(this.messageFrom(err))
@@ -42,11 +51,10 @@ export class RecycleBinPage {
 
   onDeleteForever(id: number) {
     if (!confirm('Permanently delete this bill? This cannot be undone.')) return;
-    this.deletedMessage.set('');
     this.deletedError.set('');
     this.billService.deletePermanent(id).subscribe({
       next: () => {
-        this.deletedMessage.set('Bill deleted forever.');
+        this.notification.success('Bill deleted forever.');
         this.loadDeleted();
       },
       error: (err: HttpErrorResponse) => this.deletedError.set(this.messageFrom(err))

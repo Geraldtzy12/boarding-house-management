@@ -1,4 +1,6 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, HostListener, inject, OnInit, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { catchError, debounceTime, distinctUntilChanged, map, of, Subject, switchMap } from 'rxjs';
 import { CurrencyPipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { BillService, BillPayload } from '../../services/bill.service';
@@ -7,6 +9,8 @@ import { Bill, BillStatus, BillType } from '../../models/bill';
 import { Tenant } from '../../models/tenant';
 import { BillForm } from '../../components/bill-form/bill-form';
 import { MonthPicker } from '../../components/month-picker/month-picker';
+import { ConfirmModal } from '../../components/confirm-modal/confirm-modal';
+import { NotificationService } from '../../services/notification.service';
 
 function currentMonth(): string {
   const d = new Date();
@@ -21,28 +25,55 @@ function monthLabel(month: string): string {
 
 @Component({
   selector: 'app-bills-page',
-  imports: [BillForm, MonthPicker, CurrencyPipe],
+  imports: [BillForm, MonthPicker, CurrencyPipe, ConfirmModal],
   templateUrl: './bills-page.html',
   styleUrl: './bills-page.css'
 })
-export class BillsPage {
+export class BillsPage implements OnInit {
   private billService = inject(BillService);
   private tenantService = inject(TenantService);
+  private notification = inject(NotificationService);
+  error = signal('');
 
   filters = ['All', 'Overdue', 'Pending'] as const;
   typeFilters = ['All', 'Rent', 'Electricity', 'Water', 'Other'] as const;
 
-  bills = signal<Bill[]>([]);                      // single source of truth
-  tenants = signal<Tenant[]>([]);
+  // Page loads as STREAMS (Week 5: toSignal + switchMap). load() re-fires them;
+  // a failed load shows the error and falls back to an empty list.
+  private reload$ = new Subject<void>();
+  bills = toSignal(this.reload$.pipe(
+    switchMap(() => this.billService.getAll().pipe(
+      catchError(() => {
+        this.error.set('Could not load the bills. Is the API running?');
+        return of([]);
+      })
+    ))
+  ), { initialValue: [] as Bill[] });
+  tenants = toSignal(this.reload$.pipe(
+    switchMap(() => this.tenantService.getAll().pipe(
+      catchError(() => {
+        this.error.set('Could not load the tenants. Is the API running?');
+        return of([]);
+      })
+    ))
+  ), { initialValue: [] as Tenant[] });
   filter = signal<'All' | BillStatus>('All');
   typeFilter = signal<'All' | BillType>('All');
-  search = signal('');
+  // Keystrokes become a STREAM; operators shape it before the list reads it
+  // (Week 5: Subject + debounceTime + distinctUntilChanged, exposed as a signal).
+  private searchTerms$ = new Subject<string>();
+  search = toSignal(
+    this.searchTerms$.pipe(
+      map(term => term.trim().toLowerCase()),
+      debounceTime(250),          // wait until the user pauses typing
+      distinctUntilChanged()      // ignore if nothing really changed
+    ),
+    { initialValue: '' }
+  );
   month = signal(currentMonth());
   view = signal<'collect' | 'history'>('collect');
   showForm = signal(false);
   pendingDelete = signal<Bill | null>(null);   // bill na hinihintay i-confirm ang delete
-  message = signal('');
-  error = signal('');
 
   // only active tenants with a room
   billableTenants = computed(() => this.tenants().filter(t => t.roomId !== null));
@@ -51,7 +82,7 @@ export class BillsPage {
   filtered = computed(() => {
     const status = this.filter();
     const type = this.typeFilter();
-    const q = this.search().trim().toLowerCase();
+    const q = this.search();   // already trimmed + lowercased by the search stream
     return this.bills().filter(b =>
       b.status !== 'Paid' &&
       (status === 'All' || b.status === status) &&
@@ -65,7 +96,7 @@ export class BillsPage {
   // History: paid bills, grouped by month (newest first), with totals
   paidByMonth = computed(() => {
     const type = this.typeFilter();
-    const q = this.search().trim().toLowerCase();
+    const q = this.search();   // already trimmed + lowercased by the search stream
     const paid = this.bills()
       .filter(b => b.status === 'Paid' && (type === 'All' || b.type === type) &&
         (q === '' || this.matchesSearch(b, q)))
@@ -91,24 +122,17 @@ export class BillsPage {
   pendingCount = computed(() => this.bills().filter(b => b.status === 'Pending').length);
   paidCount = computed(() => this.bills().filter(b => b.status === 'Paid').length);
 
-  constructor() {
+  // Initialization belongs here, not in the constructor (Week 4: ngOnInit).
+  ngOnInit() {
     this.load();
   }
 
   load() {
-    this.billService.getAll().subscribe({
-      next: b => this.bills.set(b),
-      error: () => this.error.set('Could not load the bills. Is the API running?')
-    });
-    this.tenantService.getAll().subscribe({
-      next: t => this.tenants.set(t),
-      error: () => this.error.set('Could not load the tenants. Is the API running?')
-    });
+    this.reload$.next();
   }
 
   onAddClick() {
     this.error.set('');
-    this.message.set('');
     this.showForm.set(true);
   }
 
@@ -116,11 +140,18 @@ export class BillsPage {
     this.showForm.set(false);
   }
 
+  // Escape closes the open form or the delete confirmation, wherever the focus is.
+  @HostListener('document:keydown.escape')
+  onEscape() {
+    if (this.pendingDelete()) this.onCancelDelete();
+    else if (this.showForm()) this.onCancel();
+  }
+
   onSave(payload: BillPayload) {
     this.error.set('');
     this.billService.create(payload).subscribe({
       next: () => {
-        this.message.set('Bill has been added.');
+        this.notification.success('Bill has been added.');
         this.showForm.set(false);
         this.load();
       },
@@ -130,10 +161,9 @@ export class BillsPage {
 
   onGenerate() {
     this.error.set('');
-    this.message.set('');
     this.billService.generate(this.month()).subscribe({
       next: r => {
-        this.message.set(`${r.created} new rent bills for ${r.month}.`);
+        this.notification.success(`${r.created} new rent bills for ${r.month}.`);
         this.load();
       },
       error: (err: HttpErrorResponse) => this.error.set(this.messageFrom(err))
@@ -143,7 +173,10 @@ export class BillsPage {
   onPay(id: number) {
     this.error.set('');
     this.billService.pay(id).subscribe({
-      next: () => this.load(),
+      next: () => {
+        this.notification.success('Bill marked as paid.');
+        this.load();
+      },
       error: (err: HttpErrorResponse) => this.error.set(this.messageFrom(err))
     });
   }
@@ -163,7 +196,7 @@ export class BillsPage {
     this.error.set('');
     this.billService.delete(bill.id).subscribe({
       next: () => {
-        this.message.set('Bill moved to the Recycle Bin.');
+        this.notification.success('Bill moved to the Recycle Bin.');
         this.load();
       },
       error: (err: HttpErrorResponse) => this.error.set(this.messageFrom(err))
@@ -171,7 +204,8 @@ export class BillsPage {
   }
 
   onSearch(event: Event) {
-    this.search.set((event.target as HTMLInputElement).value);
+    // Push the keystroke into the stream; the debounced signal updates later.
+    this.searchTerms$.next((event.target as HTMLInputElement).value);
   }
 
   onTypeChange(event: Event) {

@@ -59,15 +59,14 @@
   </div>
 
   @if (pendingLogout()) {
-    <div class="confirm-modal" role="alertdialog" aria-label="Confirm log out">
-      <h3>Log out?</h3>
+    <app-confirm-modal title="Log out?" confirmLabel="Log out"
+      (confirmed)="onConfirmLogout()"
+      (cancelled)="onCancelLogout()">
       <p>You will need your password to log back in.</p>
-      <div class="actions">
-        <button class="danger" (click)="onConfirmLogout()">Log out</button>
-        <button class="secondary" (click)="onCancelLogout()">Cancel</button>
-      </div>
-    </div>
+    </app-confirm-modal>
   }
 } @else {
   <router-outlet />
 }
+
+<app-toast />

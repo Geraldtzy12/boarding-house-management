@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, HostListener, inject, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { TenantService, TenantPayload } from '../../services/tenant.service';
 import { RoomService } from '../../services/room.service';
@@ -54,6 +54,11 @@ export class TenantsPage {
     this.showForm.set(false);
     this.editing.set(null);
   }
+// Escape closes the open form, wherever the focus is (Week 3: global listener).
+@HostListener('document:keydown.escape')
+onEscape() {
+  if (this.showForm()) this.onCancel();
+}
 
   onSave(payload: TenantPayload) {
     this.error.set('');

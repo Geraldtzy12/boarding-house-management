@@ -52,4 +52,10 @@ describe('RoomsPage', () => {
     expect(errors.length).toBe(1);
     expect(errors[0].textContent).toContain('Could not load the rooms');
   });
+
+  it('should close the open form when Escape is pressed', () => {
+  component.showForm.set(true);
+  document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+  expect(component.showForm()).toBe(false);
+});
 });

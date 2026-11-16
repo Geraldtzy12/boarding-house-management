@@ -30,4 +30,12 @@ describe('BillForm', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('should emit cancelled when Escape is pressed inside the form', () => {
+    let cancelled = false;
+    component.cancelled.subscribe(() => cancelled = true);
+    const form = fixture.nativeElement.querySelector('form') as HTMLElement;
+    form.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    expect(cancelled).toBe(true);
+  });
 });

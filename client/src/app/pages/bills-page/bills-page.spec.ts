@@ -1,5 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { of } from 'rxjs';
 import { BillsPage } from './bills-page';
+import { BillService } from '../../services/bill.service';
+import { TenantService } from '../../services/tenant.service';
 import { Bill } from '../../models/bill';
 import { Tenant } from '../../models/tenant';
 
@@ -33,9 +36,34 @@ describe('BillsPage', () => {
   let component: BillsPage;
   let fixture: ComponentFixture<BillsPage>;
 
+  // The page loads its data through mocked services (Week 5: toSignal streams).
+  let mockBills: Bill[] = [];
+  let mockTenants: Tenant[] = [];
+
+  // Feed the mock data into the page, like a real load from the API.
+  const loadBills = (bills: Bill[]) => {
+    mockBills = bills;
+    component.load();
+  };
+
   beforeEach(async () => {
+    mockBills = [];
+    mockTenants = [];
     await TestBed.configureTestingModule({
       imports: [BillsPage],
+      providers: [
+        {
+          provide: BillService,
+          useValue: {
+            getAll: () => of(mockBills),
+            create: () => of(makeBill({ id: 99 })),
+            generate: () => of({ created: 1, month: '2026-11' }),
+            pay: () => of(undefined),
+            delete: () => of(undefined),
+          },
+        },
+        { provide: TenantService, useValue: { getAll: () => of(mockTenants) } },
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(BillsPage);
@@ -48,7 +76,7 @@ describe('BillsPage', () => {
   });
 
   it('should keep paid bills out of To collect and group them by month in History', () => {
-    component.bills.set([
+    loadBills([
       makeBill({ id: 1, status: 'Paid', paidOn: '2026-11-05', month: '2026-11' }),
       makeBill({ id: 2, status: 'Paid', paidOn: '2026-11-06', month: '2026-11', type: 'Electricity', amount: 850 }),
       makeBill({ id: 3, status: 'Paid', paidOn: '2026-10-03', month: '2026-10' }),
@@ -65,21 +93,51 @@ describe('BillsPage', () => {
     expect(groups[0].bills.map(b => b.id)).toEqual([1, 2]);
   });
 
-  it('should filter To collect by tenant name or room', () => {
-    component.bills.set([
+  // The search stream is debounced (250 ms), so these tests wait in real time.
+  const wait = (ms: number) => new Promise<void>(r => setTimeout(r, ms));
+
+  it('should filter To collect by tenant name or room', async () => {
+    loadBills([
       makeBill({ id: 1, tenant: makeTenant({ id: 1, name: 'Daddy Tads' }), roomNo: '102', status: 'Overdue' }),
       makeBill({ id: 2, tenant: makeTenant({ id: 2, name: 'Maria Santos' }), roomNo: '101', status: 'Pending' }),
       makeBill({ id: 3, status: 'Paid', paidOn: '2026-11-05', month: '2026-11' }),
     ]);
 
-    component.search.set('daddy');
+    const type = async (value: string) => {
+      component.onSearch({ target: { value } } as unknown as Event);
+      await wait(300);   // let the debounced search stream emit
+    };
+
+    await type('daddy');
     expect(component.filtered().map(b => b.id)).toEqual([1]);
 
-    component.search.set('101');
+    await type('101');
     expect(component.filtered().map(b => b.id)).toEqual([2]);
 
-    component.search.set('');
+    await type('');
     expect(component.filtered().map(b => b.id)).toEqual([1, 2]);
+  });
+
+  it('should only filter after the user pauses typing (debounced search)', async () => {
+    loadBills([
+      makeBill({ id: 1, tenant: makeTenant({ id: 1, name: 'Daddy Tads' }), roomNo: '102', status: 'Overdue' }),
+      makeBill({ id: 2, tenant: makeTenant({ id: 2, name: 'Maria Santos' }), roomNo: '101', status: 'Pending' }),
+    ]);
+
+    // Fast typing: the list does not filter yet.
+    component.onSearch({ target: { value: 'd' } } as unknown as Event);
+    await wait(100);
+    component.onSearch({ target: { value: 'da' } } as unknown as Event);
+    await wait(100);
+    component.onSearch({ target: { value: 'dad' } } as unknown as Event);
+    await wait(100);
+    expect(component.search()).toBe('');
+    expect(component.filtered().map(b => b.id)).toEqual([1, 2]);
+
+    // After a pause, only the latest term applies.
+    await wait(300);
+    expect(component.search()).toBe('dad');
+    expect(component.filtered().map(b => b.id)).toEqual([1]);
   });
 
   it('should label the due column with how overdue a bill is, or when it was paid', () => {
@@ -112,7 +170,7 @@ describe('BillsPage', () => {
   });
 
   it('should render each bill status with its own badge via @switch', () => {
-    component.bills.set([
+    loadBills([
       makeBill({ id: 1, status: 'Pending' }),
       makeBill({ id: 2, status: 'Overdue', dueDate: '2026-11-01' }),
     ]);
@@ -123,10 +181,22 @@ describe('BillsPage', () => {
     expect(badges[1].classList.contains('overdue')).toBe(true);
 
     component.view.set('history');
-    component.bills.set([makeBill({ id: 3, status: 'Paid', paidOn: '2026-11-05' })]);
+    loadBills([makeBill({ id: 3, status: 'Paid', paidOn: '2026-11-05' })]);
     fixture.detectChanges();
     const paid = fixture.nativeElement.querySelector('.badge') as HTMLElement;
     expect(paid.textContent?.trim()).toBe('Paid');
     expect(paid.classList.contains('paid')).toBe(true);
+  });
+
+  it('should close the open form when Escape is pressed', () => {
+    component.showForm.set(true);
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    expect(component.showForm()).toBe(false);
+  });
+
+  it('should close the delete confirmation when Escape is pressed', () => {
+    component.pendingDelete.set(makeBill({ id: 1 }));
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    expect(component.pendingDelete()).toBeNull();
   });
 });

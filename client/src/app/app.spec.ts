@@ -128,4 +128,36 @@ describe('App', () => {
     expect(compiled.querySelector('.confirm-modal')).toBeNull();
     expect(localStorage.getItem('bh_token')).toBe(fakeToken);
   });
+
+  it('should close the account menu when Escape is pressed', async () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    app.menuOpen.set(true);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.account-menu')).toBeTruthy();
+
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    fixture.detectChanges();
+    expect(app.menuOpen()).toBe(false);
+    expect(fixture.nativeElement.querySelector('.account-menu')).toBeNull();
+  });
+
+  it('should cancel the log out confirmation when Escape is pressed', async () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    app.pendingLogout.set(true);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.confirm-modal')).toBeTruthy();
+
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    fixture.detectChanges();
+    expect(app.pendingLogout()).toBe(false);
+    expect(fixture.nativeElement.querySelector('.confirm-modal')).toBeNull();
+  });
 });

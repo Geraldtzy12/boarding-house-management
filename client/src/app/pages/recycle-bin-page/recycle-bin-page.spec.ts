@@ -2,6 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
 import { RecycleBinPage } from './recycle-bin-page';
 import { BillService } from '../../services/bill.service';
+import { NotificationService, Toast } from '../../services/notification.service';
 import { Bill } from '../../models/bill';
 
 function makeDeletedBill(partial: Partial<Bill> & { id: number }): Bill {
@@ -24,6 +25,7 @@ function makeDeletedBill(partial: Partial<Bill> & { id: number }): Bill {
 describe('RecycleBinPage', () => {
   let component: RecycleBinPage;
   let fixture: ComponentFixture<RecycleBinPage>;
+  let notification: NotificationService;
   let restoreCalls = 0;
 
   beforeEach(async () => {
@@ -44,6 +46,7 @@ describe('RecycleBinPage', () => {
 
     fixture = TestBed.createComponent(RecycleBinPage);
     component = fixture.componentInstance;
+    notification = TestBed.inject(NotificationService);
     fixture.detectChanges();
   });
 
@@ -59,10 +62,13 @@ describe('RecycleBinPage', () => {
   });
 
   it('should restore a deleted bill when Restore is clicked', () => {
+    let toasts: Toast[] = [];
+    notification.toasts$.subscribe(t => toasts = t);
+
     const buttons = Array.from(fixture.nativeElement.querySelectorAll('button')) as HTMLButtonElement[];
     const restore = buttons.find(b => b.textContent?.trim() === 'Restore');
     restore?.click();
     expect(restoreCalls).toBe(1);
-    expect(component.deletedMessage()).toBe('Bill restored.');
+    expect(toasts.map(t => t.message)).toEqual(['Bill restored.']);
   });
 });

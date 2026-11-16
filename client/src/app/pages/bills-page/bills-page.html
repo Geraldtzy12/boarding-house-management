@@ -7,9 +7,6 @@
   </div>
 </div>
 
-@if (message()) {
-  <p class="message">{{ message() }}</p>
-}
 @if (error()) {
   <p class="error">{{ error() }}</p>
 }
@@ -35,7 +32,7 @@
 
 <div class="filters-bar">
   <input type="search" placeholder="Search tenant or room..." aria-label="Search bills"
-    [value]="search()" (input)="onSearch($event)" />
+    (input)="onSearch($event)" />
   <select [value]="typeFilter()" (change)="onTypeChange($event)" aria-label="Filter by type">
     @for (t of typeFilters; track t) {
       <option [value]="t">{{ t === 'All' ? 'All types' : t }}</option>
@@ -121,13 +118,10 @@
 }
 
 @if (pendingDelete(); as b) {
-  <div class="confirm-modal" role="alertdialog" aria-label="Confirm delete">
-    <h3>Delete this bill?</h3>
+  <app-confirm-modal title="Delete this bill?"
+    (confirmed)="onConfirmDelete()"
+    (cancelled)="onCancelDelete()">
     <p>{{ b.tenant?.name ?? '—' }} · {{ b.type }} · Room {{ b.roomNo }} · {{ b.amount | currency:'PHP' }}</p>
     <p class="muted">It will go to the Recycle Bin in Settings, where you can restore it.</p>
-    <div class="actions">
-      <button class="danger" (click)="onConfirmDelete()">Delete</button>
-      <button class="secondary" (click)="onCancelDelete()">Cancel</button>
-    </div>
-  </div>
+  </app-confirm-modal>
 }

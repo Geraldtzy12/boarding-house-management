@@ -75,6 +75,15 @@ describe('TenantForm', () => {
     expect(component.contactError()).toBe('');
   });
 
+  it('should emit cancelled when Escape is pressed inside the form', () => {
+    let cancelled = false;
+    component.cancelled.subscribe(() => cancelled = true);
+    fixture.detectChanges();
+    const form = fixture.nativeElement.querySelector('form') as HTMLElement;
+    form.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    expect(cancelled).toBe(true);
+  });
+
   it('should only allow saving with an 11-digit contact number', () => {
     let draft: { contact: string } | undefined;
     component.saved.subscribe(d => draft = d);

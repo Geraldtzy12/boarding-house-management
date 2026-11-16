@@ -6,9 +6,6 @@
   <div class="top"><h3>Deleted bills</h3></div>
   <p class="muted">Deleted bills stay here until you restore them or delete them forever.</p>
 
-  @if (deletedMessage()) {
-    <p class="message">{{ deletedMessage() }}</p>
-  }
   @if (deletedError()) {
     <p class="error">{{ deletedError() }}</p>
   }

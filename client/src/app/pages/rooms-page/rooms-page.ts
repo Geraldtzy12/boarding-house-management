@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, HostListener, inject, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { RoomService } from '../../services/room.service';
 import { TenantService } from '../../services/tenant.service';
@@ -71,6 +71,13 @@ export class RoomsPage {
     this.showForm.set(false);
     this.editing.set(null);
   }
+  
+  // Escape closes the open form, wherever the focus is (Week 3: global listener).
+@HostListener('document:keydown.escape')
+onEscape() {
+  if (this.showForm()) this.onCancel();
+}
+
 
   onSave(draft: RoomDraft) {
     this.error.set('');

@@ -1,9 +1,12 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { catchError, of, Subject, switchMap } from 'rxjs';
 import { CurrencyPipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { RouterLink } from '@angular/router';
 import { DashboardService } from '../../services/dashboard.service';
 import { BillService } from '../../services/bill.service';
+import { NotificationService } from '../../services/notification.service';
 import { DashboardSummary, VacantRoom } from '../../models/dashboard';
 import { roomImageUrl } from '../../models/room';
 
@@ -18,32 +21,38 @@ function currentMonth(): string {
   templateUrl: './dashboard-page.html',
   styleUrl: './dashboard-page.css'
 })
-export class DashboardPage {
+export class DashboardPage implements OnInit {
   private dashboardService = inject(DashboardService);
   private billService = inject(BillService);
-
-  summary = signal<DashboardSummary | null>(null);
+  private notification = inject(NotificationService);
   error = signal('');
-  message = signal('');
 
-  constructor() {
+  // Page load as a STREAM (Week 5: toSignal + switchMap). load() re-fires it.
+  private reload$ = new Subject<void>();
+  summary = toSignal(this.reload$.pipe(
+    switchMap(() => this.dashboardService.getSummary().pipe(
+      catchError(() => {
+        this.error.set('Could not load the dashboard. Is the API running?');
+        return of(null);
+      })
+    ))
+  ), { initialValue: null });
+
+  // Initialization belongs here, not in the constructor (Week 4: ngOnInit).
+  ngOnInit() {
     this.load();
   }
 
   load() {
-    this.dashboardService.getSummary().subscribe({
-      next: s => this.summary.set(s),
-      error: () => this.error.set('Could not load the dashboard. Is the API running?')
-    });
+    this.reload$.next();
   }
 
   onGenerate() {
     this.error.set('');
-    this.message.set('');
     const month = currentMonth();
     this.billService.generate(month).subscribe({
       next: r => {
-        this.message.set(`${r.created} new rent bills for ${month}.`);
+        this.notification.success(`${r.created} new rent bills for ${month}.`);
         this.load();
       },
       error: (err: HttpErrorResponse) => this.error.set(this.messageFrom(err))

@@ -1,6 +1,9 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
+import { of } from 'rxjs';
 import { DashboardPage } from './dashboard-page';
+import { DashboardService } from '../../services/dashboard.service';
+import { BillService } from '../../services/bill.service';
 import { DashboardSummary } from '../../models/dashboard';
 
 function makeSummary(partial: Partial<DashboardSummary> = {}): DashboardSummary {
@@ -33,10 +36,18 @@ describe('DashboardPage', () => {
   let component: DashboardPage;
   let fixture: ComponentFixture<DashboardPage>;
 
+  // The page loads its data through a mocked service (Week 5: toSignal stream).
+  let mockSummary: DashboardSummary | null = null;
+
   beforeEach(async () => {
+    mockSummary = null;
     await TestBed.configureTestingModule({
       imports: [DashboardPage],
-      providers: [provideRouter([])],
+      providers: [
+        provideRouter([]),
+        { provide: DashboardService, useValue: { getSummary: () => of(mockSummary) } },
+        { provide: BillService, useValue: { generate: () => of({ created: 0, month: '2026-11' }) } },
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(DashboardPage);
@@ -49,7 +60,8 @@ describe('DashboardPage', () => {
   });
 
   it('should hold the loaded summary', () => {
-    component.summary.set(makeSummary());
+    mockSummary = makeSummary();
+    component.load();
     expect(component.summary()?.collectedThisMonth).toBe(9500);
     expect(component.summary()?.toCollect).toBe(4350);
     expect(component.summary()?.overdueCount).toBe(2);
