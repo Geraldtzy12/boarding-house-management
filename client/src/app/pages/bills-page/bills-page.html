@@ -44,7 +44,7 @@
   @if (view() === 'collect') {
     <select [value]="filter()" (change)="onStatusChange($event)" aria-label="Filter by status">
       @for (f of filters; track f) {
-        <option [value]="f">{{ f === 'All' ? 'All status' : f }}</option>
+        <option [value]="f">{{ f === 'All' ? 'All statuses' : f }}</option>
       }
     </select>
   }
@@ -64,7 +64,14 @@
             <td>{{ b.type }}</td>
             <td>{{ b.amount | currency:'PHP' }}</td>
             <td>{{ dueLabel(b) }}</td>
-            <td><span class="badge" [class.overdue]="b.status === 'Overdue'" [class.pending]="b.status === 'Pending'">{{ b.status }}</span></td>
+            <td>
+              @switch (b.status) {
+                @case ('Pending') { <span class="badge pending">Pending</span> }
+                @case ('Paid') { <span class="badge paid">Paid</span> }
+                @case ('Overdue') { <span class="badge overdue">Overdue</span> }
+                @default { <span class="badge">{{ b.status }}</span> }
+              }
+            </td>
             <td class="row-actions">
               <button class="small" (click)="onPay(b.id)">Mark as paid</button>
               <button class="link" (click)="onRemoveClick(b)">Delete</button>
@@ -92,7 +99,14 @@
               <td>{{ b.type }}</td>
               <td>{{ b.amount | currency:'PHP' }}</td>
               <td>{{ dueLabel(b) }}</td>
-              <td><span class="badge" [class.overdue]="b.status === 'Overdue'" [class.pending]="b.status === 'Pending'">{{ b.status }}</span></td>
+              <td>
+                @switch (b.status) {
+                  @case ('Pending') { <span class="badge pending">Pending</span> }
+                  @case ('Paid') { <span class="badge paid">Paid</span> }
+                  @case ('Overdue') { <span class="badge overdue">Overdue</span> }
+                  @default { <span class="badge">{{ b.status }}</span> }
+                }
+              </td>
               <td class="row-actions">
                 <button class="link" (click)="onRemoveClick(b)">Delete</button>
               </td>

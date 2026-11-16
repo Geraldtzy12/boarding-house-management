@@ -81,6 +81,7 @@ app-recycle-bin-page {
 }
 .badge.occupied, .badge.overdue { background: #fee2e2; color: #991b1b; }
 .badge.pending { background: #fef3c7; color: #92400e; }
+.badge.paid { background: #d1fae5; color: #065f46; }
 
 /* ---------- Buttons ---------- */
 button {

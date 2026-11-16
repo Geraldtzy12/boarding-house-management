@@ -110,4 +110,23 @@ describe('BillsPage', () => {
     component.onConfirmDelete();
     expect(component.pendingDelete()).toBeNull();
   });
+
+  it('should render each bill status with its own badge via @switch', () => {
+    component.bills.set([
+      makeBill({ id: 1, status: 'Pending' }),
+      makeBill({ id: 2, status: 'Overdue', dueDate: '2026-11-01' }),
+    ]);
+    fixture.detectChanges();
+    const badges = Array.from(fixture.nativeElement.querySelectorAll('.badge')) as HTMLElement[];
+    expect(badges.map(b => b.textContent?.trim())).toEqual(['Pending', 'Overdue']);
+    expect(badges[0].classList.contains('pending')).toBe(true);
+    expect(badges[1].classList.contains('overdue')).toBe(true);
+
+    component.view.set('history');
+    component.bills.set([makeBill({ id: 3, status: 'Paid', paidOn: '2026-11-05' })]);
+    fixture.detectChanges();
+    const paid = fixture.nativeElement.querySelector('.badge') as HTMLElement;
+    expect(paid.textContent?.trim()).toBe('Paid');
+    expect(paid.classList.contains('paid')).toBe(true);
+  });
 });
