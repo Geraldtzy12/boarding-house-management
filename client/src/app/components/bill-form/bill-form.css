@@ -1,0 +1,8 @@
+/* The save error sits at the top of the form, so pin it there while
+   scrolling — otherwise it scrolls out of view and the only trace of
+   it is the dimmed page banner behind the modal. */
+.form .error {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}

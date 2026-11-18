@@ -37,6 +37,13 @@ describe('BillForm', () => {
     expect(component).toBeTruthy();
   });
 
+  it('should show the save error at the top of the form', () => {
+    expect(fixture.nativeElement.textContent).not.toContain('already has a Water bill');
+    fixture.componentRef.setInput('error', 'Gerald Bonalos already has a Water bill for 2026-11.');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Gerald Bonalos already has a Water bill for 2026-11.');
+  });
+
   it('should emit cancelled when Escape is pressed inside the form', () => {
     let cancelled = false;
     component.cancelled.subscribe(() => cancelled = true);

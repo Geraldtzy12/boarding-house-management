@@ -29,6 +29,7 @@ function today(): string {
 export class BillForm implements AfterViewInit {
   rooms = input.required<Room[]>();      // data DOWN
   tenants = input.required<Tenant[]>();  // data DOWN
+  error = input<string>('');   // from the page: duplicate bill error from the API
   saved = output<BillPayload>();         // events UP
   cancelled = output<void>();
 

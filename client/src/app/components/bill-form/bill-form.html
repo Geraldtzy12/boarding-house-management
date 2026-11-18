@@ -1,6 +1,10 @@
 <form class="form" (ngSubmit)="submit()" (keydown.escape)="cancelled.emit()">
   <h3>Add Bill</h3>
 
+  @if (error()) {
+    <p class="error">{{ error() }}</p>
+  }
+
   <label>Room
     <select #firstField name="roomId" [ngModel]="roomId()" (ngModelChange)="onRoomChanged($event)" (blur)="roomTouched.set(true)">
       <option [ngValue]="null">-- Choose a room --</option>

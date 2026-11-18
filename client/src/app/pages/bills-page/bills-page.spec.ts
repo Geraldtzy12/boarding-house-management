@@ -202,6 +202,26 @@ describe('BillsPage', () => {
     expect(paid.classList.contains('paid')).toBe(true);
   });
 
+  it('should hide the page error banner while the form is open (error shows inside the modal instead)', async () => {
+    component.error.set('Gerald Bonalos already has a Water bill for 2026-11.');
+    component.showForm.set(true);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const errors = fixture.nativeElement.querySelectorAll('.error');
+    expect(errors.length).toBe(1);
+    expect(errors[0].closest('app-bill-form')).toBeTruthy();
+  });
+
+  it('should show the page error banner when the form is closed', async () => {
+    component.error.set('Could not load the bills. Is the API running?');
+    component.showForm.set(false);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const errors = fixture.nativeElement.querySelectorAll('.error');
+    expect(errors.length).toBe(1);
+    expect(errors[0].textContent).toContain('Could not load the bills');
+  });
+
   it('should close the open form when Escape is pressed', () => {
     component.showForm.set(true);
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
