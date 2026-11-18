@@ -1,15 +1,16 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, HostListener, inject, OnInit, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { catchError, of, Subject, switchMap } from 'rxjs';
 import { CurrencyPipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { BillService } from '../../services/bill.service';
 import { NotificationService } from '../../services/notification.service';
+import { ConfirmModal } from '../../components/confirm-modal/confirm-modal';
 import { Bill } from '../../models/bill';
 
 @Component({
   selector: 'app-recycle-bin-page',
-  imports: [CurrencyPipe],
+  imports: [CurrencyPipe, ConfirmModal],
   templateUrl: './recycle-bin-page.html',
   styleUrl: './recycle-bin-page.css'
 })
@@ -17,6 +18,7 @@ export class RecycleBinPage implements OnInit {
   private billService = inject(BillService);
   private notification = inject(NotificationService);
   deletedError = signal('');
+  pendingDelete = signal<Bill | null>(null);   // bill na hinihintay i-confirm ang permanent delete
 
   // Page load as a STREAM (Week 5: toSignal + switchMap). loadDeleted() re-fires it.
   private reload$ = new Subject<void>();
@@ -49,16 +51,34 @@ export class RecycleBinPage implements OnInit {
     });
   }
 
-  onDeleteForever(id: number) {
-    if (!confirm('Permanently delete this bill? This cannot be undone.')) return;
+  // Permanent delete now asks through the shared ConfirmModal (Week 4),
+  // like the Bills delete and the log-out confirm — no more native confirm().
+  onDeleteForever(bill: Bill) {
+    this.pendingDelete.set(bill);
+  }
+
+  onCancelDelete() {
+    this.pendingDelete.set(null);
+  }
+
+  onConfirmDelete() {
+    const bill = this.pendingDelete();
+    this.pendingDelete.set(null);
+    if (!bill) return;
     this.deletedError.set('');
-    this.billService.deletePermanent(id).subscribe({
+    this.billService.deletePermanent(bill.id).subscribe({
       next: () => {
         this.notification.success('Bill deleted forever.');
         this.loadDeleted();
       },
       error: (err: HttpErrorResponse) => this.deletedError.set(this.messageFrom(err))
     });
+  }
+
+  // Escape closes the delete confirmation, wherever the focus is (Week 3).
+  @HostListener('document:keydown.escape')
+  onEscape() {
+    if (this.pendingDelete()) this.onCancelDelete();
   }
 
   // '2026-11-05' -> 'Nov 5, 2026'

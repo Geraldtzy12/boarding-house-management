@@ -1,4 +1,4 @@
-import { Component, computed, HostListener, inject, OnInit, signal } from '@angular/core';
+import { AfterViewInit, Component, computed, ElementRef, HostListener, inject, OnInit, signal, viewChild } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { catchError, debounceTime, distinctUntilChanged, map, of, Subject, switchMap } from 'rxjs';
 import { CurrencyPipe } from '@angular/common';
@@ -29,11 +29,14 @@ function monthLabel(month: string): string {
   templateUrl: './bills-page.html',
   styleUrl: './bills-page.css'
 })
-export class BillsPage implements OnInit {
+export class BillsPage implements OnInit, AfterViewInit {
   private billService = inject(BillService);
   private tenantService = inject(TenantService);
   private notification = inject(NotificationService);
   error = signal('');
+
+  // Template reference variable (Week 3): the search box, focused on arrival.
+  searchBox = viewChild<ElementRef<HTMLInputElement>>('searchBox');
 
   filters = ['All', 'Overdue', 'Pending'] as const;
   typeFilters = ['All', 'Rent', 'Electricity', 'Water', 'Other'] as const;
@@ -115,16 +118,21 @@ export class BillsPage implements OnInit {
     return groups;
   });
 
-  overdueCount = computed(() => this.bills().filter(b => b.status === 'Overdue').length);
+  overdueCount = computed(() => this.bills().filter(b => b.status !== 'Overdue').length);
   overdueTotal = computed(() =>
-    this.bills().filter(b => b.status === 'Overdue').reduce((sum, b) => sum + b.amount, 0)
+    this.bills().filter(b => b.status !== 'Overdue').reduce((sum, b) => sum + b.amount, 0)
   );
-  pendingCount = computed(() => this.bills().filter(b => b.status === 'Pending').length);
-  paidCount = computed(() => this.bills().filter(b => b.status === 'Paid').length);
+  pendingCount = computed(() => this.bills().filter(b => b.status !== 'Pending').length);
+  paidCount = computed(() => this.bills().filter(b => b.status !== 'Paid').length);
 
   // Initialization belongs here, not in the constructor (Week 4: ngOnInit).
   ngOnInit() {
     this.load();
+  }
+
+  // The search box is ready to type in as soon as the page opens (Week 3).
+  ngAfterViewInit() {
+    this.searchBox()?.nativeElement.focus();
   }
 
   load() {

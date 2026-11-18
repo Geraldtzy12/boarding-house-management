@@ -6,16 +6,28 @@
   }
 
   <label>Room No.
-    <input name="roomNo" [(ngModel)]="roomNo" />
+    <input #firstField name="roomNo" [(ngModel)]="roomNo" (blur)="roomNoTouched.set(true)" />
   </label>
+
+  @if (roomNoError()) {
+    <p class="error">{{ roomNoError() }}</p>
+  }
 
   <label>Monthly Rate (PHP)
-    <input name="monthlyRate" type="number" min="0" [(ngModel)]="monthlyRate" />
+    <input name="monthlyRate" type="number" min="0" [(ngModel)]="monthlyRate" (blur)="rateTouched.set(true)" />
   </label>
 
+  @if (rateError()) {
+    <p class="error">{{ rateError() }}</p>
+  }
+
   <label>Capacity
-    <input name="capacity" type="number" min="1" [(ngModel)]="capacity" />
+    <input name="capacity" type="number" min="1" [(ngModel)]="capacity" (blur)="capacityTouched.set(true)" />
   </label>
+
+  @if (capacityError()) {
+    <p class="error">{{ capacityError() }}</p>
+  }
 
   <label>Room Type
     <select name="type" [(ngModel)]="type">

@@ -99,4 +99,27 @@ describe('TenantForm', () => {
     component.submit();
     expect(draft?.contact).toBe('09170000001');
   });
+
+  it('should focus the Name field when the form opens', () => {
+    expect(document.activeElement?.getAttribute('name')).toBe('name');
+  });
+
+  it('should show the name error only after leaving the field empty', () => {
+    expect(fixture.nativeElement.textContent).not.toContain('Name is required.');
+    const input = fixture.nativeElement.querySelector('input[name="name"]') as HTMLInputElement;
+    input.dispatchEvent(new Event('blur'));
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Name is required.');
+  });
+
+  it('should show the contact error only after leaving a short number', () => {
+    component.onContactChanged('091700000');
+    fixture.detectChanges();
+    // The error is computed, but it stays hidden until the field is left.
+    expect(fixture.nativeElement.textContent).not.toContain('Contact number must be 11 digits.');
+    const input = fixture.nativeElement.querySelector('input[name="contact"]') as HTMLInputElement;
+    input.dispatchEvent(new Event('blur'));
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Contact number must be 11 digits.');
+  });
 });

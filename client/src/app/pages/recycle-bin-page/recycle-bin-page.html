@@ -22,10 +22,19 @@
       </div>
       <div class="actions">
         <button class="small" (click)="onRestore(b.id)">Restore</button>
-        <button class="link" (click)="onDeleteForever(b.id)">Delete forever</button>
+        <button class="link" (click)="onDeleteForever(b)">Delete forever</button>
       </div>
     </div>
   } @empty {
     <p class="empty">Recycle Bin is empty.</p>
   }
 </div>
+
+@if (pendingDelete(); as b) {
+  <app-confirm-modal title="Delete this bill forever?"
+    (confirmed)="onConfirmDelete()"
+    (cancelled)="onCancelDelete()">
+    <p>{{ b.tenant?.name ?? '—' }} · {{ b.type }} · Room {{ b.roomNo }} · {{ b.amount | currency:'PHP' }}</p>
+    <p class="muted">This cannot be undone.</p>
+  </app-confirm-modal>
+}

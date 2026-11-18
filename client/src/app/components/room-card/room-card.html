@@ -1,4 +1,6 @@
-<div class="card room-card">
+<!-- Clicking anywhere on the card opens edit (Week 3); the buttons stop
+     the click from bubbling up so they do their own job only. -->
+<div class="card room-card" (click)="edit.emit(room())">
   <img class="photo" [src]="imageFor(room())" [alt]="'Room ' + room().roomNo" />
   <div class="body">
     <div class="top">
@@ -14,8 +16,8 @@
       <p>Rented by: {{ tenantName() }}</p>
     }
     <div class="actions">
-      <button (click)="edit.emit(room())">Edit</button>
-      <button class="danger" (click)="remove.emit(room().id)">Delete</button>
+      <button (click)="$event.stopPropagation(); edit.emit(room())">Edit</button>
+      <button class="danger" (click)="$event.stopPropagation(); remove.emit(room().id)">Delete</button>
     </div>
   </div>
 </div>

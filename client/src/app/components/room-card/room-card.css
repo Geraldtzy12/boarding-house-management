@@ -1,6 +1,7 @@
 .room-card {
   padding: 0;
   overflow: hidden;
+  cursor: pointer;   /* the whole card opens edit */
 }
 
 .room-card .photo {

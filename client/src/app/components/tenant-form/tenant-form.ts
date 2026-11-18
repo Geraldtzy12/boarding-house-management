@@ -1,4 +1,4 @@
-import { Component, computed, effect, input, output, signal } from '@angular/core';
+import { AfterViewInit, Component, computed, effect, ElementRef, input, output, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Tenant } from '../../models/tenant';
 import { Room } from '../../models/room';
@@ -18,12 +18,15 @@ function today(): string {
   templateUrl: './tenant-form.html',
   styleUrl: './tenant-form.css'
 })
-export class TenantForm {
+export class TenantForm implements AfterViewInit {
   tenant = input<Tenant | null>(null);   // null = Add, has a value = Edit
   rooms = input.required<Room[]>();
   error = input<string>('');   // from the page: duplicate / occupied error from the API
   saved = output<TenantPayload>();
   cancelled = output<void>();
+
+  // Template reference variable (Week 3): the first field, focused when the form opens.
+  firstField = viewChild<ElementRef<HTMLInputElement>>('firstField');
 
   name = signal('');
   contact = signal('');
@@ -52,6 +55,19 @@ export class TenantForm {
     return 'Contact number must be 11 digits.';
   });
 
+  // Blur validation (Week 3: focus/blur): errors show only after the user
+  // leaves the field, so the form does not shout while they are still typing.
+  // The contact error itself stays live-computed; only its display is gated.
+  nameTouched = signal(false);
+  contactTouched = signal(false);
+
+  nameError = computed(() =>
+    this.nameTouched() && this.name().trim().length === 0 ? 'Name is required.' : '');
+
+  ngAfterViewInit() {
+    this.firstField()?.nativeElement.focus();
+  }
+
   canSave = computed(() =>
     this.name().trim().length > 0 &&
     this.contactDigits().length === 11 &&
@@ -66,6 +82,8 @@ export class TenantForm {
       this.contact.set((t?.contact ?? '').replace(/\D/g, ''));
       this.roomId.set(t?.roomId ?? null);
       this.leaseStart.set(t?.leaseStart ?? today());
+      this.nameTouched.set(false);
+      this.contactTouched.set(false);
     });
   }
 

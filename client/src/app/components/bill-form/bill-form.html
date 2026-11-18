@@ -2,13 +2,17 @@
   <h3>Add Bill</h3>
 
   <label>Tenant
-    <select name="tenantId" [(ngModel)]="tenantId">
+    <select #firstField name="tenantId" [(ngModel)]="tenantId" (blur)="tenantTouched.set(true)">
       <option [ngValue]="null">-- Choose a tenants --</option>
       @for (t of tenants(); track t.id) {
         <option [ngValue]="t.id">{{ t.name }} (Room {{ t.room?.roomNo }})</option>
       }
     </select>
   </label>
+
+  @if (tenantError()) {
+    <p class="error">{{ tenantError() }}</p>
+  }
 
   <label>Type
     <select name="type" [(ngModel)]="type">
@@ -24,8 +28,12 @@
   </div>
 
   <label>Amount (PHP)
-    <input name="amount" type="number" min="0" [(ngModel)]="amount" />
+    <input name="amount" type="number" min="0" [(ngModel)]="amount" (blur)="amountTouched.set(true)" />
   </label>
+
+  @if (amountError()) {
+    <p class="error">{{ amountError() }}</p>
+  }
 
   <div class="field">
     <span>Due date</span>

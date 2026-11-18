@@ -1,4 +1,4 @@
-import { Component, computed, input, output, signal } from '@angular/core';
+import { AfterViewInit, Component, computed, ElementRef, input, output, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Tenant } from '../../models/tenant';
 import { BillType } from '../../models/bill';
@@ -25,10 +25,13 @@ function today(): string {
   templateUrl: './bill-form.html',
   styleUrl: './bill-form.css'
 })
-export class BillForm {
+export class BillForm implements AfterViewInit {
   tenants = input.required<Tenant[]>();   // data DOWN
   saved = output<BillPayload>();          // events UP
   cancelled = output<void>();
+
+  // Template reference variable (Week 3): the first field, focused when the form opens.
+  firstField = viewChild<ElementRef<HTMLSelectElement>>('firstField');
 
   types: BillType[] = ['Electricity', 'Water', 'Rent', 'Other'];
 
@@ -46,7 +49,22 @@ export class BillForm {
     this.dueDate().length > 0
   );
 
+  // Blur validation (Week 3: focus/blur): errors show only after the user
+  // leaves the field, so the form does not shout while they are still typing.
+  tenantTouched = signal(false);
+  amountTouched = signal(false);
+
+  tenantError = computed(() =>
+    this.tenantTouched() && this.tenantId() === null ? 'Choose a tenant.' : '');
+  amountError = computed(() =>
+    this.amountTouched() && this.amount() <= 0 ? 'Amount must be more than 0.' : '');
+
+  ngAfterViewInit() {
+    this.firstField()?.nativeElement.focus();
+  }
+
   submit() {
+    if (!this.canSave()) return;
     this.saved.emit({
       tenantId: this.tenantId()!,
       type: this.type(),

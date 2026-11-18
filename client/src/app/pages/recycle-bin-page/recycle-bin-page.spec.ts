@@ -27,9 +27,11 @@ describe('RecycleBinPage', () => {
   let fixture: ComponentFixture<RecycleBinPage>;
   let notification: NotificationService;
   let restoreCalls = 0;
+  let deleteForeverCalls = 0;
 
   beforeEach(async () => {
     restoreCalls = 0;
+    deleteForeverCalls = 0;
     await TestBed.configureTestingModule({
       imports: [RecycleBinPage],
       providers: [
@@ -38,7 +40,7 @@ describe('RecycleBinPage', () => {
           useValue: {
             getDeleted: () => of([makeDeletedBill({ id: 9 })]),
             restore: () => { restoreCalls++; return of(undefined); },
-            deletePermanent: () => of(undefined),
+            deletePermanent: () => { deleteForeverCalls++; return of(undefined); },
           },
         },
       ],
@@ -70,5 +72,46 @@ describe('RecycleBinPage', () => {
     restore?.click();
     expect(restoreCalls).toBe(1);
     expect(toasts.map(t => t.message)).toEqual(['Bill restored.']);
+  });
+
+  it('should ask through the ConfirmModal before deleting forever, and not delete yet', () => {
+    const buttons = Array.from(fixture.nativeElement.querySelectorAll('button')) as HTMLButtonElement[];
+    const deleteForever = buttons.find(b => b.textContent?.trim() === 'Delete forever');
+    deleteForever?.click();
+    fixture.detectChanges();
+    expect(deleteForeverCalls).toBe(0);
+    expect(component.pendingDelete()?.id).toBe(9);
+    expect(fixture.nativeElement.textContent).toContain('Delete this bill forever?');
+    expect(fixture.nativeElement.textContent).toContain('This cannot be undone.');
+  });
+
+  it('should delete forever only when the confirmation is confirmed', () => {
+    let toasts: Toast[] = [];
+    notification.toasts$.subscribe(t => toasts = t);
+
+    component.onDeleteForever(makeDeletedBill({ id: 9 }));
+    fixture.detectChanges();
+    const buttons = Array.from(fixture.nativeElement.querySelectorAll('button')) as HTMLButtonElement[];
+    const confirm = buttons.find(b => b.textContent?.trim() === 'Delete');
+    confirm?.click();
+    expect(deleteForeverCalls).toBe(1);
+    expect(component.pendingDelete()).toBeNull();
+    expect(toasts.map(t => t.message)).toEqual(['Bill deleted forever.']);
+  });
+
+  it('should not delete forever when the confirmation is cancelled', () => {
+    component.onDeleteForever(makeDeletedBill({ id: 9 }));
+    fixture.detectChanges();
+    const buttons = Array.from(fixture.nativeElement.querySelectorAll('button')) as HTMLButtonElement[];
+    const cancel = buttons.find(b => b.textContent?.trim() === 'Cancel');
+    cancel?.click();
+    expect(deleteForeverCalls).toBe(0);
+    expect(component.pendingDelete()).toBeNull();
+  });
+
+  it('should close the delete confirmation when Escape is pressed', () => {
+    component.onDeleteForever(makeDeletedBill({ id: 9 }));
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    expect(component.pendingDelete()).toBeNull();
   });
 });

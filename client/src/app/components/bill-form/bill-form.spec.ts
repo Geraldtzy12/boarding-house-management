@@ -38,4 +38,31 @@ describe('BillForm', () => {
     form.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
     expect(cancelled).toBe(true);
   });
+
+  it('should focus the Tenant field when the form opens', () => {
+    expect(document.activeElement?.getAttribute('name')).toBe('tenantId');
+  });
+
+  it('should show the tenant error only after leaving the field with no tenant chosen', () => {
+    expect(fixture.nativeElement.textContent).not.toContain('Choose a tenant.');
+    const select = fixture.nativeElement.querySelector('select[name="tenantId"]') as HTMLSelectElement;
+    select.dispatchEvent(new Event('blur'));
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Choose a tenant.');
+  });
+
+  it('should show the amount error after leaving a zero amount', () => {
+    expect(fixture.nativeElement.textContent).not.toContain('Amount must be more than 0.');
+    const input = fixture.nativeElement.querySelector('input[name="amount"]') as HTMLInputElement;
+    input.dispatchEvent(new Event('blur'));
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Amount must be more than 0.');
+  });
+
+  it('should not save when nothing is chosen yet', () => {
+    let saved = false;
+    component.saved.subscribe(() => saved = true);
+    component.submit();
+    expect(saved).toBe(false);
+  });
 });

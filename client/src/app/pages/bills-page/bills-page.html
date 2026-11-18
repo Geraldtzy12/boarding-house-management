@@ -31,7 +31,7 @@
 </div>
 
 <div class="filters-bar">
-  <input type="search" placeholder="Search tenant or room..." aria-label="Search bills"
+  <input #searchBox type="search" placeholder="Search tenant or room..." aria-label="Search bills"
     (input)="onSearch($event)" />
   <select [value]="typeFilter()" (change)="onTypeChange($event)" aria-label="Filter by type">
     @for (t of typeFilters; track t) {

@@ -51,4 +51,31 @@ describe('RoomCard', () => {
     expect(fixture.nativeElement.querySelector('img')?.getAttribute('src')).toBe('rooms/studio.webp');
     expect(fixture.nativeElement.textContent).toContain('Studio');
   });
+
+  it('should open edit when the card itself is clicked', () => {
+    let edited: Room | undefined;
+    component.edit.subscribe(r => edited = r);
+    const card = fixture.nativeElement.querySelector('.room-card') as HTMLElement;
+    card.click();
+    expect(edited?.roomNo).toBe('101');
+  });
+
+  it('should emit edit only once when the Edit button is clicked (no double open)', () => {
+    let editCount = 0;
+    component.edit.subscribe(() => editCount++);
+    const buttons = Array.from(fixture.nativeElement.querySelectorAll('button')) as HTMLButtonElement[];
+    buttons.find(b => b.textContent?.trim() === 'Edit')?.click();
+    expect(editCount).toBe(1);
+  });
+
+  it('should delete without opening edit when the Delete button is clicked', () => {
+    let editCount = 0;
+    let removed: number | undefined;
+    component.edit.subscribe(() => editCount++);
+    component.remove.subscribe(id => removed = id);
+    const buttons = Array.from(fixture.nativeElement.querySelectorAll('button')) as HTMLButtonElement[];
+    buttons.find(b => b.textContent?.trim() === 'Delete')?.click();
+    expect(removed).toBe(1);
+    expect(editCount).toBe(0);
+  });
 });

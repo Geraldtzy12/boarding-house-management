@@ -46,4 +46,39 @@ describe('RoomForm', () => {
     form.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
     expect(cancelled).toBe(true);
   });
+
+  it('should focus the Room No. field when the form opens', () => {
+    fixture.detectChanges();
+    expect(document.activeElement?.getAttribute('name')).toBe('roomNo');
+  });
+
+  it('should show the room number error only after leaving the field empty', () => {
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).not.toContain('Room number is required.');
+    const input = fixture.nativeElement.querySelector('input[name="roomNo"]') as HTMLInputElement;
+    input.dispatchEvent(new Event('blur'));
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Room number is required.');
+  });
+
+  it('should show the rate error after leaving a zero rate', () => {
+    fixture.detectChanges();
+    component.monthlyRate.set(0);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).not.toContain('Monthly rate must be more than 0.');
+    const input = fixture.nativeElement.querySelector('input[name="monthlyRate"]') as HTMLInputElement;
+    input.dispatchEvent(new Event('blur'));
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Monthly rate must be more than 0.');
+  });
+
+  it('should show the capacity error after leaving a zero capacity', () => {
+    fixture.detectChanges();
+    component.capacity.set(0);
+    fixture.detectChanges();
+    const input = fixture.nativeElement.querySelector('input[name="capacity"]') as HTMLInputElement;
+    input.dispatchEvent(new Event('blur'));
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Capacity must be at least 1.');
+  });
 });

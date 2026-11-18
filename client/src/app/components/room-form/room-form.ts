@@ -1,4 +1,4 @@
-import { Component, computed, effect, input, output, signal } from '@angular/core';
+import { AfterViewInit, Component, computed, effect, ElementRef, input, output, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Room, RoomStatus, RoomType, ROOM_TYPES, roomImageUrl } from '../../models/room';
 
@@ -14,11 +14,14 @@ export type RoomDraft = Omit<Room, 'id'> & {
   templateUrl: './room-form.html',
   styleUrl: './room-form.css'
 })
-export class RoomForm {
+export class RoomForm implements AfterViewInit {
   room = input<Room | null>(null);   // null = Add, has a value = Edit
   error = input<string>('');   // from the page: duplicate room number error from the API
   saved = output<RoomDraft>();
   cancelled = output<void>();
+
+  // Template reference variable (Week 3): the first field, focused when the form opens.
+  firstField = viewChild<ElementRef<HTMLInputElement>>('firstField');
 
   roomNo = signal('');
   monthlyRate = signal(0);
@@ -44,6 +47,23 @@ export class RoomForm {
     this.roomNo().trim().length > 0 && this.monthlyRate() > 0 && this.capacity() >= 1
   );
 
+  // Blur validation (Week 3: focus/blur): an error shows only after the user
+  // leaves the field, so the form does not shout while they are still typing.
+  roomNoTouched = signal(false);
+  rateTouched = signal(false);
+  capacityTouched = signal(false);
+
+  roomNoError = computed(() =>
+    this.roomNoTouched() && this.roomNo().trim().length === 0 ? 'Room number is required.' : '');
+  rateError = computed(() =>
+    this.rateTouched() && this.monthlyRate() <= 0 ? 'Monthly rate must be more than 0.' : '');
+  capacityError = computed(() =>
+    this.capacityTouched() && this.capacity() < 1 ? 'Capacity must be at least 1.' : '');
+
+  ngAfterViewInit() {
+    this.firstField()?.nativeElement.focus();
+  }
+
   constructor() {
     // When the `room` input changes, refill the form
     effect(() => {
@@ -58,6 +78,9 @@ export class RoomForm {
       this.imagePreview.set(null);
       this.removeImage.set(false);
       this.photoError.set('');
+      this.roomNoTouched.set(false);
+      this.rateTouched.set(false);
+      this.capacityTouched.set(false);
     });
   }
 

@@ -6,17 +6,21 @@
   }
 
   <label>Name
-    <input name="name" [(ngModel)]="name" />
+    <input #firstField name="name" [(ngModel)]="name" (blur)="nameTouched.set(true)" />
   </label>
+
+  @if (nameError()) {
+    <p class="error">{{ nameError() }}</p>
+  }
 
   <label>Contact
     <span class="phone-field">
       <span class="phone-prefix">+63</span>
-      <input name="contact" [ngModel]="contact()" (ngModelChange)="onContactChanged($event)" inputmode="numeric" autocomplete="tel" placeholder="09123456789" />
+      <input name="contact" [ngModel]="contact()" (ngModelChange)="onContactChanged($event)" (blur)="contactTouched.set(true)" inputmode="numeric" autocomplete="tel" placeholder="09123456789" />
     </span>
   </label>
 
-  @if (contactError()) {
+  @if (contactTouched() && contactError()) {
     <p class="error">{{ contactError() }}</p>
   }
 

@@ -199,4 +199,10 @@ describe('BillsPage', () => {
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
     expect(component.pendingDelete()).toBeNull();
   });
+
+  it('should focus the search box when the page opens', () => {
+    fixture.detectChanges();
+    const search = fixture.nativeElement.querySelector('input[aria-label="Search bills"]') as HTMLInputElement;
+    expect(document.activeElement).toBe(search);
+  });
 });

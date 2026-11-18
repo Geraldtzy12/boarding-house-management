@@ -1,4 +1,6 @@
-<div class="card">
+<!-- Clicking anywhere on the card opens edit (Week 3); the buttons stop
+     the click from bubbling up so they do their own job only. -->
+<div class="card tenant-card" (click)="edit.emit(tenant())">
   <div class="top">
     <h3>{{ tenant().name }}</h3>
     @if (tenant().room; as room) {
@@ -10,7 +12,7 @@
   <p>Contact: {{ tenant().contact }}</p>
   <p>Lease start: {{ tenant().leaseStart | date:'mediumDate' }}</p>
   <div class="actions">
-    <button (click)="edit.emit(tenant())">Edit</button>
-    <button class="danger" (click)="moveOut.emit(tenant().id)">Move out</button>
+    <button (click)="$event.stopPropagation(); edit.emit(tenant())">Edit</button>
+    <button class="danger" (click)="$event.stopPropagation(); moveOut.emit(tenant().id)">Move out</button>
   </div>
 </div>
