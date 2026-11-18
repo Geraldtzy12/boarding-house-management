@@ -13,6 +13,7 @@
 
 @if (showForm()) {
   <app-bill-form
+    [rooms]="rooms()"
     [tenants]="billableTenants()"
     (saved)="onSave($event)"
     (cancelled)="onCancel()" />

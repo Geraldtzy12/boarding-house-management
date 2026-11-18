@@ -5,8 +5,10 @@ import { CurrencyPipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { BillService, BillPayload } from '../../services/bill.service';
 import { TenantService } from '../../services/tenant.service';
+import { RoomService } from '../../services/room.service';
 import { Bill, BillStatus, BillType } from '../../models/bill';
 import { Tenant } from '../../models/tenant';
+import { Room } from '../../models/room';
 import { BillForm } from '../../components/bill-form/bill-form';
 import { MonthPicker } from '../../components/month-picker/month-picker';
 import { ConfirmModal } from '../../components/confirm-modal/confirm-modal';
@@ -32,6 +34,7 @@ function monthLabel(month: string): string {
 export class BillsPage implements OnInit, AfterViewInit {
   private billService = inject(BillService);
   private tenantService = inject(TenantService);
+  private roomService = inject(RoomService);
   private notification = inject(NotificationService);
   error = signal('');
 
@@ -60,6 +63,14 @@ export class BillsPage implements OnInit, AfterViewInit {
       })
     ))
   ), { initialValue: [] as Tenant[] });
+  rooms = toSignal(this.reload$.pipe(
+    switchMap(() => this.roomService.getAll().pipe(
+      catchError(() => {
+        this.error.set('Could not load the rooms. Is the API running?');
+        return of([]);
+      })
+    ))
+  ), { initialValue: [] as Room[] });
   filter = signal<'All' | BillStatus>('All');
   typeFilter = signal<'All' | BillType>('All');
   // Keystrokes become a STREAM; operators shape it before the list reads it
@@ -118,12 +129,12 @@ export class BillsPage implements OnInit, AfterViewInit {
     return groups;
   });
 
-  overdueCount = computed(() => this.bills().filter(b => b.status !== 'Overdue').length);
+  overdueCount = computed(() => this.bills().filter(b => b.status === 'Overdue').length);
   overdueTotal = computed(() =>
-    this.bills().filter(b => b.status !== 'Overdue').reduce((sum, b) => sum + b.amount, 0)
+    this.bills().filter(b => b.status === 'Overdue').reduce((sum, b) => sum + b.amount, 0)
   );
-  pendingCount = computed(() => this.bills().filter(b => b.status !== 'Pending').length);
-  paidCount = computed(() => this.bills().filter(b => b.status !== 'Paid').length);
+  pendingCount = computed(() => this.bills().filter(b => b.status === 'Pending').length);
+  paidCount = computed(() => this.bills().filter(b => b.status === 'Paid').length);
 
   // Initialization belongs here, not in the constructor (Week 4: ngOnInit).
   ngOnInit() {

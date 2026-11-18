@@ -1,11 +1,30 @@
 <form class="form" (ngSubmit)="submit()" (keydown.escape)="cancelled.emit()">
   <h3>Add Bill</h3>
 
+  <label>Room
+    <select #firstField name="roomId" [ngModel]="roomId()" (ngModelChange)="onRoomChanged($event)" (blur)="roomTouched.set(true)">
+      <option [ngValue]="null">-- Choose a room --</option>
+      @for (r of sortedRooms(); track r.id) {
+        <option [ngValue]="r.id">Room {{ r.roomNo }}</option>
+      }
+    </select>
+  </label>
+
+  @if (roomError()) {
+    <p class="error">{{ roomError() }}</p>
+  }
+
   <label>Tenant
-    <select #firstField name="tenantId" [(ngModel)]="tenantId" (blur)="tenantTouched.set(true)">
-      <option [ngValue]="null">-- Choose a tenants --</option>
-      @for (t of tenants(); track t.id) {
-        <option [ngValue]="t.id">{{ t.name }} (Room {{ t.room?.roomNo }})</option>
+    <select name="tenantId" [(ngModel)]="tenantId" (blur)="tenantTouched.set(true)" [disabled]="roomId() === null">
+      @if (roomId() === null) {
+        <option [ngValue]="null">-- Choose a room first --</option>
+      } @else if (roomTenants().length === 0) {
+        <option [ngValue]="null">No tenants in this room</option>
+      } @else {
+        <option [ngValue]="null">-- Choose a tenant --</option>
+        @for (t of roomTenants(); track t.id) {
+          <option [ngValue]="t.id">{{ t.name }}</option>
+        }
       }
     </select>
   </label>

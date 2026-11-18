@@ -1,10 +1,15 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { BillForm } from './bill-form';
 import { Tenant } from '../../models/tenant';
+import { Room } from '../../models/room';
 
 describe('BillForm', () => {
   let component: BillForm;
   let fixture: ComponentFixture<BillForm>;
+
+  const optionsOf = (name: string) =>
+    Array.from(fixture.nativeElement.querySelectorAll(`select[name="${name}"] option`) as NodeListOf<HTMLOptionElement>)
+      .map(o => o.textContent?.trim());
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -13,15 +18,16 @@ describe('BillForm', () => {
 
     fixture = TestBed.createComponent(BillForm);
     component = fixture.componentInstance;
+    fixture.componentRef.setInput('rooms', [
+      { id: 1, roomNo: '101', monthlyRate: 2500, capacity: 2, status: 'Vacant' },
+      { id: 2, roomNo: '103', monthlyRate: 5000, capacity: 4, status: 'Occupied' },
+      { id: 3, roomNo: '104', monthlyRate: 3000, capacity: 1, status: 'Vacant' },
+    ] satisfies Room[]);
     fixture.componentRef.setInput('tenants', [
-      {
-        id: 1,
-        name: 'Juan Dela Cruz',
-        contact: '09171234567',
-        roomId: 1,
-        leaseStart: '2026-11-01',
-        isActive: true,
-      },
+      { id: 1, name: 'Juan Dela Cruz', contact: '09171234567', roomId: 1, leaseStart: '2026-11-01', isActive: true },
+      { id: 2, name: 'Maria Santos', contact: '09170000002', roomId: 2, leaseStart: '2026-10-01', isActive: true },
+      { id: 3, name: 'Pedro Reyes', contact: '09170000003', roomId: 2, leaseStart: '2026-10-01', isActive: true },
+      { id: 4, name: 'Old Tenant', contact: '09170000004', roomId: 2, leaseStart: '2025-01-01', isActive: false },
     ] satisfies Tenant[]);
     fixture.detectChanges();
     await fixture.whenStable();
@@ -39,11 +45,64 @@ describe('BillForm', () => {
     expect(cancelled).toBe(true);
   });
 
-  it('should focus the Tenant field when the form opens', () => {
-    expect(document.activeElement?.getAttribute('name')).toBe('tenantId');
+  it('should focus the Room field when the form opens', () => {
+    expect(document.activeElement?.getAttribute('name')).toBe('roomId');
+  });
+
+  it('should list rooms in number order', () => {
+    expect(optionsOf('roomId')).toEqual([
+      '-- Choose a room --',
+      'Room 101',
+      'Room 103',
+      'Room 104',
+    ]);
+  });
+
+  it('should show only the tenants of the chosen room', () => {
+    component.onRoomChanged(2);
+    fixture.detectChanges();
+    expect(optionsOf('tenantId')).toEqual([
+      '-- Choose a tenant --',
+      'Maria Santos',
+      'Pedro Reyes',
+    ]);
+  });
+
+  it('should auto-select the tenant when the room has only one', () => {
+    component.onRoomChanged(1);
+    fixture.detectChanges();
+    expect(component.tenantId()).toBe(1);
+    expect(optionsOf('tenantId')).toContain('Juan Dela Cruz');
+  });
+
+  it('should show no tenants and disable saving for a vacant room', () => {
+    component.onRoomChanged(3);
+    fixture.detectChanges();
+    expect(component.roomTenants()).toEqual([]);
+    expect(optionsOf('tenantId')).toEqual(['No tenants in this room']);
+    expect(component.canSave()).toBe(false);
+  });
+
+  it('should reset the tenant when the room changes', () => {
+    component.onRoomChanged(2);
+    component.tenantId.set(2);
+    expect(component.tenantId()).toBe(2);
+
+    component.onRoomChanged(1);
+    expect(component.tenantId()).toBe(1);   // only tenant in Room 101, auto-selected
+  });
+
+  it('should show the room error only after leaving the field with no room chosen', () => {
+    expect(fixture.nativeElement.textContent).not.toContain('Choose a room.');
+    const select = fixture.nativeElement.querySelector('select[name="roomId"]') as HTMLSelectElement;
+    select.dispatchEvent(new Event('blur'));
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Choose a room.');
   });
 
   it('should show the tenant error only after leaving the field with no tenant chosen', () => {
+    component.onRoomChanged(2);   // two tenants, none auto-selected
+    fixture.detectChanges();
     expect(fixture.nativeElement.textContent).not.toContain('Choose a tenant.');
     const select = fixture.nativeElement.querySelector('select[name="tenantId"]') as HTMLSelectElement;
     select.dispatchEvent(new Event('blur'));
@@ -64,5 +123,15 @@ describe('BillForm', () => {
     component.saved.subscribe(() => saved = true);
     component.submit();
     expect(saved).toBe(false);
+  });
+
+  it('should save the chosen tenant once a room and an amount are set', () => {
+    let draft: { tenantId: number } | undefined;
+    component.saved.subscribe(d => draft = d);
+    component.onRoomChanged(2);
+    component.tenantId.set(3);
+    component.amount.set(850);
+    component.submit();
+    expect(draft?.tenantId).toBe(3);
   });
 });

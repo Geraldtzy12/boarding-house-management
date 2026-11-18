@@ -3,8 +3,10 @@ import { of } from 'rxjs';
 import { BillsPage } from './bills-page';
 import { BillService } from '../../services/bill.service';
 import { TenantService } from '../../services/tenant.service';
+import { RoomService } from '../../services/room.service';
 import { Bill } from '../../models/bill';
 import { Tenant } from '../../models/tenant';
+import { Room } from '../../models/room';
 
 function makeTenant(partial: Partial<Tenant> & { id: number; name: string }): Tenant {
   return {
@@ -32,6 +34,15 @@ function makeBill(partial: Partial<Bill> & { id: number }): Bill {
   };
 }
 
+function makeRoom(partial: Partial<Room> & { id: number; roomNo: string }): Room {
+  return {
+    monthlyRate: 3500,
+    capacity: 2,
+    status: 'Vacant',
+    ...partial,
+  };
+}
+
 describe('BillsPage', () => {
   let component: BillsPage;
   let fixture: ComponentFixture<BillsPage>;
@@ -39,6 +50,7 @@ describe('BillsPage', () => {
   // The page loads its data through mocked services (Week 5: toSignal streams).
   let mockBills: Bill[] = [];
   let mockTenants: Tenant[] = [];
+  let mockRooms: Room[] = [];
 
   // Feed the mock data into the page, like a real load from the API.
   const loadBills = (bills: Bill[]) => {
@@ -49,6 +61,7 @@ describe('BillsPage', () => {
   beforeEach(async () => {
     mockBills = [];
     mockTenants = [];
+    mockRooms = [];
     await TestBed.configureTestingModule({
       imports: [BillsPage],
       providers: [
@@ -63,6 +76,7 @@ describe('BillsPage', () => {
           },
         },
         { provide: TenantService, useValue: { getAll: () => of(mockTenants) } },
+        { provide: RoomService, useValue: { getAll: () => of(mockRooms) } },
       ],
     }).compileComponents();
 
@@ -204,5 +218,17 @@ describe('BillsPage', () => {
     fixture.detectChanges();
     const search = fixture.nativeElement.querySelector('input[aria-label="Search bills"]') as HTMLInputElement;
     expect(document.activeElement).toBe(search);
+  });
+
+  it('should pass rooms to the Add Bill form so tenants are picked per room', () => {
+    mockRooms = [makeRoom({ id: 1, roomNo: '103', status: 'Occupied' })];
+    mockTenants = [makeTenant({ id: 1, name: 'Juan Dela Cruz', roomId: 1 })];
+    component.load();
+    component.showForm.set(true);
+    fixture.detectChanges();
+    const roomOptions = Array.from(fixture.nativeElement.querySelectorAll('select[name="roomId"] option')) as HTMLOptionElement[];
+    expect(roomOptions.map(o => o.textContent?.trim())).toContain('Room 103');
+    const tenantOptions = Array.from(fixture.nativeElement.querySelectorAll('select[name="tenantId"] option')) as HTMLOptionElement[];
+    expect(tenantOptions.map(o => o.textContent?.trim())).toEqual(['-- Choose a room first --']);
   });
 });
