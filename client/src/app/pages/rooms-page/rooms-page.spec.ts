@@ -19,18 +19,19 @@ describe('RoomsPage', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should show the active tenant name on their room and nothing on vacant rooms', () => {
+  it('should show the active tenant names on their room and nothing on vacant rooms', () => {
     component.rooms.set([
       { id: 1, roomNo: '101', monthlyRate: 2500, capacity: 2, status: 'Occupied' },
       { id: 2, roomNo: '102', monthlyRate: 3000, capacity: 2, status: 'Vacant' },
     ]);
     component.tenants.set([
       { id: 1, name: 'Juan Dela Cruz', contact: '09170000001', roomId: 1, leaseStart: '2026-10-01', isActive: true },
-      { id: 2, name: 'Old Tenant', contact: '09170000002', roomId: 1, leaseStart: '2025-01-01', isActive: false },
+      { id: 2, name: 'Maria Santos', contact: '09170000002', roomId: 1, leaseStart: '2026-10-01', isActive: true },
+      { id: 3, name: 'Old Tenant', contact: '09170000003', roomId: 1, leaseStart: '2025-01-01', isActive: false },
     ]);
 
-    expect(component.tenantNameFor(1)).toBe('Juan Dela Cruz');
-    expect(component.tenantNameFor(2)).toBeNull();
+    expect(component.tenantNamesFor(1)).toEqual(['Juan Dela Cruz', 'Maria Santos']);
+    expect(component.tenantNamesFor(2)).toEqual([]);
   });
 
   it('should hide the page error banner while the form is open (error shows inside the modal instead)', async () => {

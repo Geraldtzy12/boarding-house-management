@@ -35,9 +35,8 @@ export class RoomsPage {
     return map;
   });
 
-  tenantNameFor(roomId: number): string | null {
-    const names = this.tenantByRoom().get(roomId);
-    return names?.length ? names.join(', ') : null;
+  tenantNamesFor(roomId: number): string[] {
+    return this.tenantByRoom().get(roomId) ?? [];
   }
 
   constructor() {

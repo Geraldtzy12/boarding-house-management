@@ -91,8 +91,8 @@ public class TenantsController : ControllerBase
     // Duplicate = another active tenant with the same name (case-insensitive,
     // "ANgel" and "angel" are the same person) OR the same contact number
     // ("0921-302-133" and "0921302133" are the same number).
-    // Occupied = another active tenant is already in the room, whatever its capacity.
-    // The tenant being edited does not count as occupying their own room.
+    // Full = the room already holds as many active tenants as its capacity.
+    // The tenant being edited does not count against their own room.
     private async Task<(int Status, string Message)?> ValidateTenantAsync(Tenant tenant, int? tenantId)
     {
         var name = tenant.Name?.Trim() ?? string.Empty;
@@ -122,11 +122,11 @@ public class TenantsController : ControllerBase
         var room = await _db.Rooms.FindAsync(tenant.RoomId);
         if (room is null) return (400, "Room not found.");
 
-        var occupiedByOther = await _db.Tenants
-            .AnyAsync(t => t.RoomId == tenant.RoomId && t.IsActive && t.Id != tenantId);
+        var occupants = await _db.Tenants
+            .CountAsync(t => t.RoomId == tenant.RoomId && t.IsActive && t.Id != tenantId);
 
-        if (occupiedByOther)
-            return (409, $"Room {room.RoomNo} is already occupied. Please choose another room.");
+        if (occupants >= room.Capacity)
+            return (409, $"Room {room.RoomNo} is already full ({occupants}/{room.Capacity} tenants). Please choose another room.");
 
         return null;
     }
@@ -138,6 +138,8 @@ public class TenantsController : ControllerBase
     // Occupied if it has a tenant, Vacant if not
     private async Task SyncRoomStatus(int? roomId)
     {
+        if (roomId is null) return;
+
         var room = await _db.Rooms.FindAsync(roomId);
         if (room is null) return;
 

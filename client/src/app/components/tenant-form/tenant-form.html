@@ -28,13 +28,13 @@
     <select name="roomId" [(ngModel)]="roomId">
       <option [ngValue]="null">-- No room --</option>
       @for (r of rooms(); track r.id) {
-        <option [ngValue]="r.id" [disabled]="isRoomDisabled(r)">Room {{ r.roomNo }} ({{ r.status }}){{ isRoomDisabled(r) ? ' — not available' : '' }}</option>
+        <option [ngValue]="r.id" [disabled]="isRoomFull(r)">Room {{ r.roomNo }} ({{ r.status }} · {{ occupancyOf(r) }}/{{ r.capacity }}){{ isRoomFull(r) ? ' — full' : '' }}</option>
       }
     </select>
   </label>
 
-  @if (selectedRoomOccupied()) {
-    <p class="error">This room is already occupied. Please choose another room.</p>
+  @if (selectedRoomFull()) {
+    <p class="error">This room is already full. Please choose another room.</p>
   }
 
   <div class="field">

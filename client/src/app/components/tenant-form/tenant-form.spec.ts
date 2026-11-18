@@ -29,6 +29,8 @@ describe('TenantForm', () => {
         status: 'Occupied',
       },
     ] satisfies Room[]);
+    // Room 102 holds 1 of 1 beds, so it is full.
+    fixture.componentRef.setInput('roomOccupancy', { 2: 1 });
     fixture.detectChanges();
     await fixture.whenStable();
   });
@@ -37,13 +39,36 @@ describe('TenantForm', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should disable occupied rooms in the dropdown', () => {
+  it('should disable full rooms in the dropdown', () => {
     const options = fixture.nativeElement.querySelectorAll('option') as NodeListOf<HTMLOptionElement>;
-    const occupied = Array.from(options).find(o => o.textContent?.includes('102'));
+    const full = Array.from(options).find(o => o.textContent?.includes('102'));
     const vacant = Array.from(options).find(o => o.textContent?.includes('101'));
-    expect(occupied?.disabled).toBe(true);
-    expect(occupied?.textContent).toContain('not available');
+    expect(full?.disabled).toBe(true);
+    expect(full?.textContent).toContain('full');
     expect(vacant?.disabled).toBe(false);
+  });
+
+  it('should keep an occupied room with space in the dropdown', () => {
+    fixture.componentRef.setInput('rooms', [
+      { id: 2, roomNo: '102', monthlyRate: 3500, capacity: 4, status: 'Occupied' },
+    ] satisfies Room[]);
+    fixture.componentRef.setInput('roomOccupancy', { 2: 2 });
+    fixture.detectChanges();
+    const options = fixture.nativeElement.querySelectorAll('option') as NodeListOf<HTMLOptionElement>;
+    const room102 = Array.from(options).find(o => o.textContent?.includes('102'));
+    expect(room102?.disabled).toBe(false);
+    expect(room102?.textContent).toContain('2/4');
+  });
+
+  it('should keep the tenant\'s own room available when editing, even when it is full', () => {
+    fixture.componentRef.setInput('tenant', {
+      id: 1, name: 'Juan Dela Cruz', contact: '09170000001',
+      roomId: 2, leaseStart: '2026-10-01', isActive: true,
+    });
+    fixture.detectChanges();
+    const options = fixture.nativeElement.querySelectorAll('option') as NodeListOf<HTMLOptionElement>;
+    const ownRoom = Array.from(options).find(o => o.textContent?.includes('102'));
+    expect(ownRoom?.disabled).toBe(false);
   });
 
   it('should show the error passed from the page', async () => {

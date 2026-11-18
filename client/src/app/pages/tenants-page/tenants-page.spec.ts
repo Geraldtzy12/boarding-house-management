@@ -52,4 +52,14 @@ describe('TenantsPage', () => {
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
     expect(component.showForm()).toBe(false);
   });
+
+  it('should count active tenants per room', () => {
+    component.tenants.set([
+      { id: 1, name: 'Juan Dela Cruz', contact: '09170000001', roomId: 1, leaseStart: '2026-10-01', isActive: true },
+      { id: 2, name: 'Maria Santos', contact: '09170000002', roomId: 1, leaseStart: '2026-10-01', isActive: true },
+      { id: 3, name: 'Old Tenant', contact: '09170000003', roomId: 1, leaseStart: '2025-01-01', isActive: false },
+      { id: 4, name: 'Pedro Reyes', contact: '09170000004', roomId: null, leaseStart: '2026-10-01', isActive: true },
+    ]);
+    expect(component.roomOccupancy()).toEqual({ 1: 2 });
+  });
 });

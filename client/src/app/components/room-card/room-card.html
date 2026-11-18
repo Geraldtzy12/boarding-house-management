@@ -11,9 +11,9 @@
       <span class="type-chip">{{ room().type }}</span>
     }
     <p>{{ room().monthlyRate | currency:'PHP' }} / month</p>
-    <p>Capacity: {{ room().capacity }}</p>
-    @if (tenantName()) {
-      <p>Rented by: {{ tenantName() }}</p>
+    <p>Capacity: {{ room().capacity }} · Occupied: {{ occupancy() }}</p>
+    @if (tenantNames().length) {
+      <p>Rented by: {{ tenantNames().join(', ') }}</p>
     }
     <div class="actions">
       <button (click)="$event.stopPropagation(); edit.emit(room())">Edit</button>

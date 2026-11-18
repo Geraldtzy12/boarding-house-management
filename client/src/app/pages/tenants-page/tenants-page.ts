@@ -1,4 +1,4 @@
-import { Component, HostListener, inject, signal } from '@angular/core';
+import { Component, computed, HostListener, inject, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { TenantService, TenantPayload } from '../../services/tenant.service';
 import { RoomService } from '../../services/room.service';
@@ -22,6 +22,16 @@ export class TenantsPage {
   editing = signal<Tenant | null>(null);
   showForm = signal(false);
   error = signal('');
+
+  // Active tenants per room, as { roomId: count } — the form disables only full rooms.
+  roomOccupancy = computed(() => {
+    const counts: Record<number, number> = {};
+    for (const t of this.tenants()) {
+      if (t.roomId === null || !t.isActive) continue;
+      counts[t.roomId] = (counts[t.roomId] ?? 0) + 1;
+    }
+    return counts;
+  });
 
   constructor() {
     this.load();

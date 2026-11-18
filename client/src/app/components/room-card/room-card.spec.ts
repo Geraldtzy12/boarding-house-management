@@ -33,9 +33,23 @@ describe('RoomCard', () => {
   });
 
   it('should show the tenant name when the room is rented', () => {
-    fixture.componentRef.setInput('tenantName', 'Juan Dela Cruz');
+    fixture.componentRef.setInput('tenantNames', ['Juan Dela Cruz']);
     fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('Rented by: Juan Dela Cruz');
+  });
+
+  it('should show all tenant names and how full the room is', () => {
+    fixture.componentRef.setInput('room', {
+      id: 1,
+      roomNo: '101',
+      monthlyRate: 3500,
+      capacity: 4,
+      status: 'Occupied',
+    } satisfies Room);
+    fixture.componentRef.setInput('tenantNames', ['Juan Dela Cruz', 'Maria Santos']);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Rented by: Juan Dela Cruz, Maria Santos');
+    expect(fixture.nativeElement.textContent).toContain('Occupied: 2/4');
   });
 
   it('should show the studio photo for a studio room', () => {

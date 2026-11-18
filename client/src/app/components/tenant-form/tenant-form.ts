@@ -21,7 +21,9 @@ function today(): string {
 export class TenantForm implements AfterViewInit {
   tenant = input<Tenant | null>(null);   // null = Add, has a value = Edit
   rooms = input.required<Room[]>();
-  error = input<string>('');   // from the page: duplicate / occupied error from the API
+  // Active tenants per room, as { roomId: count } — from the page, which loads the tenants.
+  roomOccupancy = input<Record<number, number>>({});
+  error = input<string>('');   // from the page: duplicate / full-room error from the API
   saved = output<TenantPayload>();
   cancelled = output<void>();
 
@@ -37,14 +39,21 @@ export class TenantForm implements AfterViewInit {
     this.rooms().find(r => r.id === this.roomId()) ?? null
   );
 
-  // Occupied room, except the tenant's own room when editing
-  selectedRoomOccupied = computed(() => {
-    const r = this.selectedRoom();
-    return r?.status === 'Occupied' && r.id !== this.tenant()?.roomId;
-  });
+  // A room is full when its beds are taken — except the tenant's own room
+  // when editing, which still has their bed in it.
+  isRoomFull = (room: Room): boolean => {
+    const occupants = this.roomOccupancy()[room.id] ?? 0;
+    const ownBed = this.tenant()?.roomId === room.id ? 1 : 0;
+    return occupants - ownBed >= room.capacity;
+  };
 
-  isRoomDisabled = (room: Room): boolean =>
-    room.status === 'Occupied' && room.id !== this.tenant()?.roomId;
+  occupancyOf = (room: Room): number => this.roomOccupancy()[room.id] ?? 0;
+
+  // Full room, except the tenant's own room when editing
+  selectedRoomFull = computed(() => {
+    const r = this.selectedRoom();
+    return r ? this.isRoomFull(r) : false;
+  });
 
   // Contact is digits only (09XXXXXXXXX, 11 digits); the +63 is just shown on the field.
   contactDigits = computed(() => this.contact().replace(/\D/g, ''));
@@ -72,7 +81,7 @@ export class TenantForm implements AfterViewInit {
     this.name().trim().length > 0 &&
     this.contactDigits().length === 11 &&
     this.leaseStart().length > 0 &&
-    !this.selectedRoomOccupied()
+    !this.selectedRoomFull()
   );
 
   constructor() {

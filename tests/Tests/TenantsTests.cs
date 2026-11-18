@@ -97,16 +97,49 @@ public class TenantsTests : ApiTestBase
     }
 
     [Fact]
-    public async Task Second_tenant_in_an_occupied_room_is_blocked()
+    public async Task Second_tenant_in_a_room_with_space_is_allowed()
     {
         await AuthorizeAsync();
         var roomId = await CreateRoomAsync("101", capacity: 2);
         await CreateTenantAsync("Juan Dela Cruz", "09170000001", roomId);
 
+        var secondId = await CreateTenantAsync("Maria Santos", "09170000002", roomId);
+
+        var (_, body) = await GetAsync($"/api/rooms/{roomId}");
+        Assert.Equal("Occupied", JsonDocument.Parse(body).RootElement.GetProperty("status").GetString());
+        Assert.NotEqual(0, secondId);
+    }
+
+    [Fact]
+    public async Task Third_tenant_in_a_full_room_is_blocked()
+    {
+        await AuthorizeAsync();
+        var roomId = await CreateRoomAsync("101", capacity: 2);
+        await CreateTenantAsync("Juan Dela Cruz", "09170000001", roomId);
+        await CreateTenantAsync("Maria Santos", "09170000002", roomId);
+
         var (status, body) = await PostJsonAsync("/api/tenants",
-            new { name = "Maria", contact = "09170000002", roomId, leaseStart = "2026-11-11", isActive = true });
+            new { name = "Pedro Reyes", contact = "09170000003", roomId, leaseStart = "2026-11-11", isActive = true });
         Assert.Equal(HttpStatusCode.Conflict, status);
-        Assert.Contains("already occupied", body);
+        Assert.Contains("already full", body);
+    }
+
+    [Fact]
+    public async Task Edit_tenant_into_a_full_room_is_blocked_but_staying_in_own_full_room_succeeds()
+    {
+        await AuthorizeAsync();
+        var roomId = await CreateRoomAsync("101", capacity: 2);
+        var juanId = await CreateTenantAsync("Juan Dela Cruz", "09170000001", roomId);
+        await CreateTenantAsync("Maria Santos", "09170000002", roomId);
+        var pedroId = await CreateTenantAsync("Pedro Reyes", "09170000003", roomId: null);
+
+        var (blocked, _) = await PutJsonAsync($"/api/tenants/{pedroId}",
+            new { id = pedroId, name = "Pedro Reyes", contact = "09170000003", roomId, leaseStart = "2026-11-09", isActive = true });
+        Assert.Equal(HttpStatusCode.Conflict, blocked);
+
+        var (staying, _) = await PutJsonAsync($"/api/tenants/{juanId}",
+            new { id = juanId, name = "Juan Dela Cruz", contact = "09170000001", roomId, leaseStart = "2026-11-09", isActive = true });
+        Assert.Equal(HttpStatusCode.NoContent, staying);
     }
 
     [Fact]
