@@ -182,6 +182,30 @@ public class BillsTests : ApiTestBase
     }
 
     [Fact]
+    public async Task Generate_skips_the_move_in_month_and_bills_from_the_next_month()
+    {
+        await AuthorizeAsync();
+        var roomId = await CreateRoomAsync("101", 2500, 2);
+        var (createStatus, _) = await PostJsonAsync("/api/tenants",
+            new { name = "Juan Dela Cruz", contact = "09170000001", roomId, leaseStart = "2026-11-18", isActive = true });
+        Assert.Equal(HttpStatusCode.Created, createStatus);
+
+        // Moved in on Nov 18, first month already paid at move-in: no November bill.
+        var (_, november) = await PostJsonAsync("/api/bills/generate?month=2026-11", new { });
+        Assert.Equal(0, JsonDocument.Parse(november).RootElement.GetProperty("created").GetInt32());
+
+        // First bill comes with December.
+        var (status, december) = await PostJsonAsync("/api/bills/generate?month=2026-12", new { });
+        Assert.Equal(HttpStatusCode.OK, status);
+        Assert.Equal(1, JsonDocument.Parse(december).RootElement.GetProperty("created").GetInt32());
+
+        var (_, billsBody) = await GetAsync("/api/bills?month=2026-12");
+        var bill = JsonDocument.Parse(billsBody).RootElement[0];
+        Assert.Equal("Rent", bill.GetProperty("type").GetString());
+        Assert.Equal(2500, bill.GetProperty("amount").GetDecimal());
+    }
+
+    [Fact]
     public async Task Delete_missing_bill_returns_404()
     {
         await AuthorizeAsync();

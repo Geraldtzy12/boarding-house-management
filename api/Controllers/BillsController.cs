@@ -84,7 +84,6 @@ public class BillsController : ControllerBase
             return BadRequest("Use the yyyy-MM format, for example 2026-11.");
 
         var monthKey = first.Value.ToString("yyyy-MM");
-        var lastDay = first.Value.AddMonths(1).AddDays(-1);
 
         var tenants = await _db.Tenants
             .Include(t => t.Room)
@@ -102,7 +101,7 @@ public class BillsController : ControllerBase
         {
             if (t.Room is null) continue;
             if (alreadyBilled.Contains(t.Id)) continue;   // avoid duplicates
-            if (t.LeaseStart > lastDay) continue;         // lease hasn't started yet
+            if (t.LeaseStart >= first.Value) continue;    // moved in this month: the first month is paid at move-in, so no bill yet
 
             var day = Math.Min(t.LeaseStart.Day, DateTime.DaysInMonth(first.Value.Year, first.Value.Month));
 
