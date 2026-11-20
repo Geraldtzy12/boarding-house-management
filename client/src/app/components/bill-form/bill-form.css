@@ -6,3 +6,60 @@
   top: 0;
   z-index: 1;
 }
+
+/* One amount box per bill type; blank means "no bill for this type". */
+.amounts {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin: 12px 0;
+  display: grid;
+  gap: 10px;
+}
+.amounts legend {
+  font-weight: 600;
+  padding: 0 6px;
+}
+.amount-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.amount-label {
+  display: flex;
+  flex-direction: column;
+}
+.amount-label small {
+  color: var(--muted);
+  font-size: .8rem;
+}
+.amount-row input {
+  width: 150px;
+  margin-left: auto;
+}
+
+/* After saving: what was created, and what was not (with the reason). */
+.result-list {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0;
+  display: grid;
+  gap: 8px;
+}
+.result-list li {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #f0fdf4;
+}
+.result-list li.failed {
+  background: #fef2f2;
+}
+.ok-mark {
+  color: #15803d;
+  font-weight: 700;
+}
+.fail-mark {
+  color: var(--danger);
+  font-weight: 700;
+}

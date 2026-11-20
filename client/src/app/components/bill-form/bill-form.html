@@ -1,74 +1,94 @@
 <form class="form" (ngSubmit)="submit()" (keydown.escape)="cancelled.emit()">
   <h3>Add Bill</h3>
 
-  @if (error()) {
-    <p class="error">{{ error() }}</p>
-  }
-
-  <label>Room
-    <select #firstField name="roomId" [ngModel]="roomId()" (ngModelChange)="onRoomChanged($event)" (blur)="roomTouched.set(true)">
-      <option [ngValue]="null">-- Choose a room --</option>
-      @for (r of sortedRooms(); track r.id) {
-        <option [ngValue]="r.id">Room {{ r.roomNo }}</option>
+  @if (result(); as items) {
+    <p class="muted">Here's what happened:</p>
+    <ul class="result-list">
+      @for (item of items; track item.type) {
+        <li [class.failed]="!item.ok">
+          @if (item.ok) {
+            <span class="ok-mark">✓</span> {{ item.type }} · {{ item.amount | currency:'PHP' }} — Created
+          } @else {
+            <span class="fail-mark">✗</span> {{ item.type }} · {{ item.amount | currency:'PHP' }} — {{ item.message }}
+          }
+        </li>
       }
-    </select>
-  </label>
+    </ul>
+    <div class="actions">
+      <button type="button" (click)="cancelled.emit()">Done</button>
+    </div>
+  } @else {
+    @if (error()) {
+      <p class="error">{{ error() }}</p>
+    }
 
-  @if (roomError()) {
-    <p class="error">{{ roomError() }}</p>
-  }
-
-  <label>Tenant
-    <select name="tenantId" [(ngModel)]="tenantId" (blur)="tenantTouched.set(true)" [disabled]="roomId() === null">
-      @if (roomId() === null) {
-        <option [ngValue]="null">-- Choose a room first --</option>
-      } @else if (roomTenants().length === 0) {
-        <option [ngValue]="null">No tenants in this room</option>
-      } @else {
-        <option [ngValue]="null">-- Choose a tenant --</option>
-        @for (t of roomTenants(); track t.id) {
-          <option [ngValue]="t.id">{{ t.name }}</option>
+    <label>Room
+      <select #firstField name="roomId" [ngModel]="roomId()" (ngModelChange)="onRoomChanged($event)" (blur)="roomTouched.set(true)">
+        <option [ngValue]="null">-- Choose a room --</option>
+        @for (r of sortedRooms(); track r.id) {
+          <option [ngValue]="r.id">Room {{ r.roomNo }}</option>
         }
-      }
-    </select>
-  </label>
+      </select>
+    </label>
 
-  @if (tenantError()) {
-    <p class="error">{{ tenantError() }}</p>
-  }
+    @if (roomError()) {
+      <p class="error">{{ roomError() }}</p>
+    }
 
-  <label>Type
-    <select name="type" [(ngModel)]="type">
+    <label>Tenant
+      <select name="tenantId" [ngModel]="tenantId()" (ngModelChange)="onTenantChanged($event)" (blur)="tenantTouched.set(true)" [disabled]="roomId() === null">
+        @if (roomId() === null) {
+          <option [ngValue]="null">-- Choose a room first --</option>
+        } @else if (roomTenants().length === 0) {
+          <option [ngValue]="null">No tenants in this room</option>
+        } @else {
+          <option [ngValue]="null">-- Choose a tenant --</option>
+          @for (t of roomTenants(); track t.id) {
+            <option [ngValue]="t.id">{{ t.name }}</option>
+          }
+        }
+      </select>
+    </label>
+
+    @if (tenantError()) {
+      <p class="error">{{ tenantError() }}</p>
+    }
+
+    <div class="field">
+      <span>Month</span>
+      <app-month-picker [(value)]="month" />
+    </div>
+
+    <fieldset class="amounts">
+      <legend>Amounts (PHP) — fill in the ones being paid</legend>
       @for (t of types; track t) {
-        <option [ngValue]="t">{{ t }}</option>
+        <div class="amount-row">
+          <span class="amount-label">{{ t }}
+            @if (t === 'Rent') {
+              <small>Room rate — change it if needed</small>
+            }
+          </span>
+          <input [name]="'amount-' + t" [attr.name]="'amount-' + t" type="number" min="0" [ngModel]="amountOf(t)" (ngModelChange)="setAmount(t, $event)" (blur)="amountsTouched.set(true)" />
+        </div>
       }
-    </select>
-  </label>
+    </fieldset>
 
-  <div class="field">
-    <span>Month</span>
-    <app-month-picker [(value)]="month" />
-  </div>
+    @if (amountsError()) {
+      <p class="error">{{ amountsError() }}</p>
+    }
 
-  <label>Amount (PHP)
-    <input name="amount" type="number" min="0" [(ngModel)]="amount" (blur)="amountTouched.set(true)" />
-  </label>
+    <div class="field">
+      <span>Due date</span>
+      <app-date-picker [(value)]="dueDate" />
+    </div>
 
-  @if (amountError()) {
-    <p class="error">{{ amountError() }}</p>
+    <label>Note (optional)
+      <input name="note" [(ngModel)]="note" placeholder="Example: Meter 1200 to 1285" />
+    </label>
+
+    <div class="actions">
+      <button type="submit" [disabled]="!canSave() || saving()">Save {{ filledTypes().length }} {{ filledTypes().length === 1 ? 'bill' : 'bills' }}</button>
+      <button type="button" (click)="cancelled.emit()">Cancel</button>
+    </div>
   }
-
-  <div class="field">
-    <span>Due date</span>
-    <app-date-picker [(value)]="dueDate" />
-  </div>
-
-  <label>Note (optional)
-    <input name="note" [(ngModel)]="note" placeholder="Example: Meter 1200 to 1285" />
-  </label>
-
-  <div class="actions">
-    <button type="submit" [disabled]="!canSave()">Save</button>
-    <button type="button" (click)="cancelled.emit()">Cancel</button>
-  </div>
 </form>

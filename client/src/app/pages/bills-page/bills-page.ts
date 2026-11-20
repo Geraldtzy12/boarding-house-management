@@ -1,6 +1,6 @@
 import { AfterViewInit, Component, computed, ElementRef, HostListener, inject, OnInit, signal, viewChild } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { catchError, debounceTime, distinctUntilChanged, map, of, Subject, switchMap } from 'rxjs';
+import { catchError, debounceTime, distinctUntilChanged, firstValueFrom, map, of, Subject, switchMap } from 'rxjs';
 import { CurrencyPipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { BillService, BillPayload } from '../../services/bill.service';
@@ -9,7 +9,7 @@ import { RoomService } from '../../services/room.service';
 import { Bill, BillStatus, BillType } from '../../models/bill';
 import { Tenant } from '../../models/tenant';
 import { Room } from '../../models/room';
-import { BillForm } from '../../components/bill-form/bill-form';
+import { BillForm, BillSaveResult } from '../../components/bill-form/bill-form';
 import { ConfirmModal } from '../../components/confirm-modal/confirm-modal';
 import { NotificationService } from '../../services/notification.service';
 
@@ -85,6 +85,8 @@ export class BillsPage implements OnInit, AfterViewInit {
   );
   view = signal<'collect' | 'history'>('collect');
   showForm = signal(false);
+  saving = signal(false);   // the multi-bill save is running
+  saveResult = signal<BillSaveResult[] | null>(null);   // what the last save created, and what it did not
   pendingDelete = signal<Bill | null>(null);   // bill na hinihintay i-confirm ang delete
 
   // only active tenants with a room
@@ -150,10 +152,12 @@ export class BillsPage implements OnInit, AfterViewInit {
 
   onAddClick() {
     this.error.set('');
+    this.saveResult.set(null);
     this.showForm.set(true);
   }
 
   onCancel() {
+    this.saveResult.set(null);
     this.showForm.set(false);
   }
 
@@ -164,16 +168,35 @@ export class BillsPage implements OnInit, AfterViewInit {
     else if (this.showForm()) this.onCancel();
   }
 
-  onSave(payload: BillPayload) {
+  // One Save creates one bill per filled-in type, one after the other.
+  // A bill that fails (for example a duplicate for that month) does not
+  // stop the rest: the form shows what was created and what was not.
+  async onSave(payloads: BillPayload[]) {
+    if (this.saving()) return;
     this.error.set('');
-    this.billService.create(payload).subscribe({
-      next: () => {
-        this.notification.success('Bill has been added.');
+    this.saving.set(true);
+    try {
+      const results: BillSaveResult[] = [];
+      for (const p of payloads) {
+        try {
+          await firstValueFrom(this.billService.create(p));
+          results.push({ type: p.type, amount: p.amount, ok: true, message: '' });
+        } catch (err) {
+          results.push({ type: p.type, amount: p.amount, ok: false, message: this.messageFrom(err as HttpErrorResponse) });
+        }
+      }
+      this.load();
+      const created = results.filter(r => r.ok).length;
+      if (created === results.length) {
+        this.notification.success(created === 1 ? 'Bill has been added.' : `${created} bills added.`);
         this.showForm.set(false);
-        this.load();
-      },
-      error: (err: HttpErrorResponse) => this.error.set(this.messageFrom(err))
-    });
+      } else {
+        if (created > 0) this.notification.success(`${created} bill${created === 1 ? '' : 's'} added.`);
+        this.saveResult.set(results);
+      }
+    } finally {
+      this.saving.set(false);
+    }
   }
 
   onGenerate() {

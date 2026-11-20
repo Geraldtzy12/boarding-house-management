@@ -1,10 +1,11 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
+import { HttpErrorResponse } from '@angular/common/http';
 import { BillsPage } from './bills-page';
-import { BillService } from '../../services/bill.service';
+import { BillService, BillPayload } from '../../services/bill.service';
 import { TenantService } from '../../services/tenant.service';
 import { RoomService } from '../../services/room.service';
-import { Bill } from '../../models/bill';
+import { Bill, BillType } from '../../models/bill';
 import { Tenant } from '../../models/tenant';
 import { Room } from '../../models/room';
 
@@ -61,10 +62,16 @@ describe('BillsPage', () => {
   // The month Generate was called with (the toolbar has no month picker anymore).
   let generatedMonth = '';
 
+  // What the multi-bill save tried to create, and which type should fail.
+  let createdPayloads: BillPayload[] = [];
+  let createFailFor: BillType | null = null;
+
   beforeEach(async () => {
     mockBills = [];
     mockTenants = [];
     mockRooms = [];
+    createdPayloads = [];
+    createFailFor = null;
     await TestBed.configureTestingModule({
       imports: [BillsPage],
       providers: [
@@ -72,7 +79,16 @@ describe('BillsPage', () => {
           provide: BillService,
           useValue: {
             getAll: () => of(mockBills),
-            create: () => of(makeBill({ id: 99 })),
+            create: (payload: BillPayload) => {
+              createdPayloads.push(payload);
+              if (createFailFor && payload.type === createFailFor) {
+                return throwError(() => new HttpErrorResponse({
+                  error: `Gerald Bonalos already has a ${payload.type} bill for 2026-11.`,
+                  status: 409,
+                }));
+              }
+              return of(makeBill({ id: 99 }));
+            },
             generate: (month: string) => {
               generatedMonth = month;
               return of({ created: 1, month: '2026-11' });
@@ -256,6 +272,33 @@ describe('BillsPage', () => {
     const d = new Date();
     const expected = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
     expect(generatedMonth).toBe(expected);
+  });
+
+  it('should create one bill per filled type in a single save', async () => {
+    component.showForm.set(true);
+    await component.onSave([
+      { tenantId: 1, type: 'Rent', month: '2026-11', amount: 5000, dueDate: '2026-11-09', note: null },
+      { tenantId: 1, type: 'Water', month: '2026-11', amount: 150, dueDate: '2026-11-09', note: null },
+    ]);
+    expect(createdPayloads.map(p => p.type)).toEqual(['Rent', 'Water']);
+    expect(component.saveResult()).toBeNull();
+    expect(component.showForm()).toBe(false);
+  });
+
+  it('should keep the form open with the failed bills when one create fails', async () => {
+    createFailFor = 'Water';
+    component.showForm.set(true);
+    await component.onSave([
+      { tenantId: 1, type: 'Rent', month: '2026-11', amount: 5000, dueDate: '2026-11-09', note: null },
+      { tenantId: 1, type: 'Water', month: '2026-11', amount: 150, dueDate: '2026-11-09', note: null },
+    ]);
+    expect(createdPayloads.map(p => p.type)).toEqual(['Rent', 'Water']);
+    expect(component.showForm()).toBe(true);
+    const result = component.saveResult();
+    expect(result?.length).toBe(2);
+    expect(result?.[0].ok).toBe(true);
+    expect(result?.[1].ok).toBe(false);
+    expect(result?.[1].message).toContain('already has a Water bill');
   });
 
   it('should pass rooms to the Add Bill form so tenants are picked per room', () => {

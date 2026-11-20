@@ -2,6 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { BillForm } from './bill-form';
 import { Tenant } from '../../models/tenant';
 import { Room } from '../../models/room';
+import { BillPayload } from '../../services/bill.service';
 
 describe('BillForm', () => {
   let component: BillForm;
@@ -117,12 +118,36 @@ describe('BillForm', () => {
     expect(fixture.nativeElement.textContent).toContain('Choose a tenant.');
   });
 
-  it('should show the amount error after leaving a zero amount', () => {
-    expect(fixture.nativeElement.textContent).not.toContain('Amount must be more than 0.');
-    const input = fixture.nativeElement.querySelector('input[name="amount"]') as HTMLInputElement;
+  it('should auto-fill Rent with the room rate when a room is picked', () => {
+    component.onRoomChanged(2);   // Room 103, ₱5,000
+    expect(component.amountOf('Rent')).toBe(5000);
+
+    component.onRoomChanged(1);   // Room 101, ₱2,500
+    expect(component.amountOf('Rent')).toBe(2500);
+  });
+
+  it('should let the Rent amount be changed after auto-fill', () => {
+    component.onRoomChanged(2);
+    component.setAmount('Rent', 4500);
+    expect(component.amountOf('Rent')).toBe(4500);
+  });
+
+  it('should reset the metered amounts when the tenant changes', () => {
+    component.onRoomChanged(2);
+    component.setAmount('Water', 850);
+    expect(component.amountOf('Water')).toBe(850);
+
+    component.onTenantChanged(2);
+    expect(component.amountOf('Water')).toBe(0);
+    expect(component.amountOf('Rent')).toBe(5000);   // same room, rent stays
+  });
+
+  it('should show the amount error after leaving the amounts with none filled', () => {
+    expect(fixture.nativeElement.textContent).not.toContain('Enter an amount for at least one bill.');
+    const input = fixture.nativeElement.querySelector('input[name="amount-Rent"]') as HTMLInputElement;
     input.dispatchEvent(new Event('blur'));
     fixture.detectChanges();
-    expect(fixture.nativeElement.textContent).toContain('Amount must be more than 0.');
+    expect(fixture.nativeElement.textContent).toContain('Enter an amount for at least one bill.');
   });
 
   it('should not save when nothing is chosen yet', () => {
@@ -132,13 +157,39 @@ describe('BillForm', () => {
     expect(saved).toBe(false);
   });
 
-  it('should save the chosen tenant once a room and an amount are set', () => {
-    let draft: { tenantId: number } | undefined;
-    component.saved.subscribe(d => draft = d);
+  it('should not save when all amounts are zero', () => {
+    let saved = false;
+    component.saved.subscribe(() => saved = true);
     component.onRoomChanged(2);
     component.tenantId.set(3);
-    component.amount.set(850);
+    component.setAmount('Rent', 0);
     component.submit();
-    expect(draft?.tenantId).toBe(3);
+    expect(saved).toBe(false);
+  });
+
+  it('should save one bill per filled amount', () => {
+    let draft: BillPayload[] | undefined;
+    component.saved.subscribe(d => draft = d);
+    component.onRoomChanged(2);   // Room 103: Rent auto-fills to ₱5,000
+    component.tenantId.set(3);
+    component.setAmount('Water', 850);
+    component.submit();
+    expect(draft?.length).toBe(2);
+    expect(draft?.map(d => d.type)).toEqual(['Rent', 'Water']);
+    expect(draft?.map(d => d.amount)).toEqual([5000, 850]);
+    expect(draft?.every(d => d.tenantId === 3)).toBe(true);
+    expect(draft?.every(d => d.month === component.month())).toBe(true);
+  });
+
+  it('should show the result view instead of the fields when a result is set', () => {
+    fixture.componentRef.setInput('result', [
+      { type: 'Rent', amount: 5000, ok: true, message: '' },
+      { type: 'Water', amount: 150, ok: false, message: 'Gerald Bonalos already has a Water bill for 2026-11.' },
+    ]);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Created');
+    expect(fixture.nativeElement.textContent).toContain('Gerald Bonalos already has a Water bill for 2026-11.');
+    expect(fixture.nativeElement.querySelector('select[name="roomId"]')).toBeNull();
+    expect(fixture.nativeElement.querySelector('button')?.textContent).toContain('Done');
   });
 });
