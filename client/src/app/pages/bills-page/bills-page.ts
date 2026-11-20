@@ -10,7 +10,6 @@ import { Bill, BillStatus, BillType } from '../../models/bill';
 import { Tenant } from '../../models/tenant';
 import { Room } from '../../models/room';
 import { BillForm } from '../../components/bill-form/bill-form';
-import { MonthPicker } from '../../components/month-picker/month-picker';
 import { ConfirmModal } from '../../components/confirm-modal/confirm-modal';
 import { NotificationService } from '../../services/notification.service';
 
@@ -27,7 +26,7 @@ function monthLabel(month: string): string {
 
 @Component({
   selector: 'app-bills-page',
-  imports: [BillForm, MonthPicker, CurrencyPipe, ConfirmModal],
+  imports: [BillForm, CurrencyPipe, ConfirmModal],
   templateUrl: './bills-page.html',
   styleUrl: './bills-page.css'
 })
@@ -84,7 +83,6 @@ export class BillsPage implements OnInit, AfterViewInit {
     ),
     { initialValue: '' }
   );
-  month = signal(currentMonth());
   view = signal<'collect' | 'history'>('collect');
   showForm = signal(false);
   pendingDelete = signal<Bill | null>(null);   // bill na hinihintay i-confirm ang delete
@@ -180,7 +178,8 @@ export class BillsPage implements OnInit, AfterViewInit {
 
   onGenerate() {
     this.error.set('');
-    this.billService.generate(this.month()).subscribe({
+    // No month picker on the page anymore: Generate always bills the current month.
+    this.billService.generate(currentMonth()).subscribe({
       next: r => {
         this.notification.success(`${r.created} new rent bills for ${r.month}.`);
         this.load();

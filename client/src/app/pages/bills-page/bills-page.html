@@ -2,8 +2,7 @@
   <h2>Bills</h2>
   <div class="generate">
     <button (click)="onAddClick()">+ Add bill</button>
-    <app-month-picker [(value)]="month" />
-    <button class="secondary" (click)="onGenerate()" [disabled]="!month()">Generate rent bills</button>
+    <button class="secondary" (click)="onGenerate()">Generate rent bills</button>
   </div>
 </div>
 
@@ -84,7 +83,7 @@
   </div>
 } @else {
   @for (g of paidByMonth(); track g.month) {
-    <h3>{{ g.label }} · {{ g.bills.length }} bills · {{ g.total | currency:'PHP' }} collected</h3>
+    <h3>{{ g.label }} · {{ g.bills.length }} {{ g.bills.length === 1 ? 'bill' : 'bills' }} · {{ g.total | currency:'PHP' }} collected</h3>
     <div class="table-wrap">
       <table class="bills-table">
         <thead>

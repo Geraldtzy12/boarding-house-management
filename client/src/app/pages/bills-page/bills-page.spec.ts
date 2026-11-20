@@ -58,6 +58,9 @@ describe('BillsPage', () => {
     component.load();
   };
 
+  // The month Generate was called with (the toolbar has no month picker anymore).
+  let generatedMonth = '';
+
   beforeEach(async () => {
     mockBills = [];
     mockTenants = [];
@@ -70,7 +73,10 @@ describe('BillsPage', () => {
           useValue: {
             getAll: () => of(mockBills),
             create: () => of(makeBill({ id: 99 })),
-            generate: () => of({ created: 1, month: '2026-11' }),
+            generate: (month: string) => {
+              generatedMonth = month;
+              return of({ created: 1, month: '2026-11' });
+            },
             pay: () => of(undefined),
             delete: () => of(undefined),
           },
@@ -238,6 +244,18 @@ describe('BillsPage', () => {
     fixture.detectChanges();
     const search = fixture.nativeElement.querySelector('input[aria-label="Search bills"]') as HTMLInputElement;
     expect(document.activeElement).toBe(search);
+  });
+
+  it('should not show a month picker in the toolbar', () => {
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('app-month-picker')).toBeNull();
+  });
+
+  it('should generate rent bills for the current month', () => {
+    component.onGenerate();
+    const d = new Date();
+    const expected = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    expect(generatedMonth).toBe(expected);
   });
 
   it('should pass rooms to the Add Bill form so tenants are picked per room', () => {
