@@ -24,11 +24,13 @@ public class DashboardController : ControllerBase
         var rooms = await _db.Rooms.ToListAsync();
         var bills = await _db.Bills.Include(b => b.Tenant).Where(b => !b.IsDeleted).ToListAsync();
 
+        // Collected this month = paid bills FOR this month (the bill's Month),
+        // not by the date the money came in: a December rent bill paid in
+        // November belongs to December's total, same as the History page groups it.
+        var currentMonth = today.ToString("yyyy-MM");
         var paidThisMonth = bills.Where(b =>
             b.Status == BillStatus.Paid &&
-            b.PaidOn is not null &&
-            b.PaidOn.Value.Year == today.Year &&
-            b.PaidOn.Value.Month == today.Month);
+            b.Month == currentMonth);
 
         var overdue = bills
             .Where(b => b.Status == BillStatus.Overdue)
