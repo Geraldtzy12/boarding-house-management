@@ -1,5 +1,7 @@
 <div class="toolbar">
   <h2>Tenants</h2>
+  <input type="search" placeholder="Search name, contact, or room..." aria-label="Search tenants"
+    (input)="onSearch($event)" />
   <button (click)="onAddClick()">+ Add Tenant</button>
 </div>
 
@@ -18,9 +20,13 @@
 }
 
 <div class="grid">
-  @for (t of tenants(); track t.id) {
+  @for (t of filteredTenants(); track t.id) {
     <app-tenant-card [tenant]="t" (edit)="onEdit($event)" (moveOut)="onMoveOut($event)" />
   } @empty {
-    <p>Wala pang tenants. I-click ang "+ Add Tenant".</p>
+    @if (search()) {
+      <p>No tenants match "{{ search() }}".</p>
+    } @else {
+      <p>Wala pang tenants. I-click ang "+ Add Tenant".</p>
+    }
   }
 </div>

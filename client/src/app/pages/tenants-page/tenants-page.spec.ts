@@ -62,4 +62,58 @@ describe('TenantsPage', () => {
     ]);
     expect(component.roomOccupancy()).toEqual({ 1: 2 });
   });
+
+  // The search stream is debounced (250 ms), so these tests wait in real time.
+  const wait = (ms: number) => new Promise<void>(r => setTimeout(r, ms));
+
+  const type = async (value: string) => {
+    component.onSearch({ target: { value } } as unknown as Event);
+    await wait(300);   // let the debounced search stream emit
+  };
+
+  it('should filter tenants by name, contact number, or room number', async () => {
+    component.rooms.set([
+      { id: 1, roomNo: '101', monthlyRate: 2500, capacity: 2, status: 'Occupied' },
+      { id: 2, roomNo: '103', monthlyRate: 5000, capacity: 4, status: 'Occupied' },
+    ]);
+    component.tenants.set([
+      { id: 1, name: 'Juan Dela Cruz', contact: '09170000001', roomId: 1, leaseStart: '2026-10-01', isActive: true },
+      { id: 2, name: 'Kim Matibay', contact: '09170000002', roomId: 2, leaseStart: '2026-10-01', isActive: true },
+      { id: 3, name: 'Maria Santos', contact: '09170000003', roomId: 2, leaseStart: '2026-10-01', isActive: true },
+    ]);
+
+    await type('kim');
+    expect(component.filteredTenants().map(t => t.id)).toEqual([2]);
+
+    await type('103');
+    expect(component.filteredTenants().map(t => t.id)).toEqual([2, 3]);
+
+    await type('09170000001');
+    expect(component.filteredTenants().map(t => t.id)).toEqual([1]);
+
+    await type('');
+    expect(component.filteredTenants().map(t => t.id)).toEqual([1, 2, 3]);
+  });
+
+  it('should only filter after the user pauses typing (debounced search)', async () => {
+    component.tenants.set([
+      { id: 1, name: 'Juan Dela Cruz', contact: '09170000001', roomId: 1, leaseStart: '2026-10-01', isActive: true },
+      { id: 2, name: 'Kim Matibay', contact: '09170000002', roomId: 2, leaseStart: '2026-10-01', isActive: true },
+    ]);
+
+    // Fast typing: the list does not filter yet.
+    component.onSearch({ target: { value: 'k' } } as unknown as Event);
+    await wait(100);
+    component.onSearch({ target: { value: 'ki' } } as unknown as Event);
+    await wait(100);
+    component.onSearch({ target: { value: 'kim' } } as unknown as Event);
+    await wait(100);
+    expect(component.search()).toBe('');
+    expect(component.filteredTenants().map(t => t.id)).toEqual([1, 2]);
+
+    // After a pause, only the latest term applies.
+    await wait(300);
+    expect(component.search()).toBe('kim');
+    expect(component.filteredTenants().map(t => t.id)).toEqual([2]);
+  });
 });

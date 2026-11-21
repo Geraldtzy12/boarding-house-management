@@ -1,5 +1,7 @@
 <div class="toolbar">
   <h2>Rooms</h2>
+  <input type="search" placeholder="Search room, type, or tenant..." aria-label="Search rooms"
+    (input)="onSearch($event)" />
   <button (click)="onAddClick()">+ Add Room</button>
 </div>
 
@@ -12,9 +14,13 @@
 }
 
 <div class="grid">
-  @for (r of rooms(); track r.id) {
+  @for (r of filteredRooms(); track r.id) {
     <app-room-card [room]="r" [tenantNames]="tenantNamesFor(r.id)" (edit)="onEdit($event)" (remove)="onRemove($event)" />
   } @empty {
-    <p>No rooms yet. Click "+ Add Room".</p>
+    @if (search()) {
+      <p>No rooms match "{{ search() }}".</p>
+    } @else {
+      <p>No rooms yet. Click "+ Add Room".</p>
+    }
   }
 </div>

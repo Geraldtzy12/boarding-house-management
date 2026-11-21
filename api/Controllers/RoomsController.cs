@@ -38,6 +38,7 @@ public class RoomsController : ControllerBase
         room.RoomNo = room.RoomNo?.Trim() ?? string.Empty;
         room.Type = NormalizeType(room.Type);
         room.ImageUrl = null;   // photos come from POST /api/rooms/{id}/image, not from create
+        room.Status = RoomStatus.Vacant;   // a new room starts Vacant; tenants decide the status
 
         var validation = await ValidateRoomAsync(room, null);
         if (validation is not null) return StatusCode(validation.Value.Status, validation.Value.Message);
@@ -51,10 +52,16 @@ public class RoomsController : ControllerBase
     public async Task<IActionResult> Update(int id, Room room)
     {
         if (id != room.Id) return BadRequest();
-        if (!await _db.Rooms.AnyAsync(r => r.Id == id)) return NotFound();
+
+        var existing = await _db.Rooms.AsNoTracking().FirstOrDefaultAsync(r => r.Id == id);
+        if (existing is null) return NotFound();
 
         room.RoomNo = room.RoomNo?.Trim() ?? string.Empty;
         room.Type = NormalizeType(room.Type);
+        // The status the form sends is ignored: it is worked out from the
+        // tenants (see TenantsController.SyncRoomStatus), so a room can no
+        // longer be saved as Vacant while it has tenants, or vice versa.
+        room.Status = existing.Status;
 
         var validation = await ValidateRoomAsync(room, id);
         if (validation is not null) return StatusCode(validation.Value.Status, validation.Value.Message);
@@ -156,6 +163,19 @@ public async Task<IActionResult> Delete(int id)
 
         if (room.Type is not null && room.Type is not ("Single" or "Double-deck" or "Studio" or "Bed Spacer"))
             return (400, "Room type must be Single, Double-deck, Studio or Bed Spacer.");
+
+        // The form already checks these, but the API must too — a request
+        // can come from anywhere, not just the form.
+        if (room.MonthlyRate <= 0) return (400, "Monthly rate must be more than 0.");
+        if (room.Capacity < 1) return (400, "Capacity must be at least 1.");
+
+        // Capacity cannot drop below the tenants already living in the room.
+        if (roomId is not null)
+        {
+            var tenants = await _db.Tenants.CountAsync(t => t.RoomId == roomId && t.IsActive);
+            if (room.Capacity < tenants)
+                return (409, $"Capacity cannot be less than the {tenants} tenant(s) in this room.");
+        }
 
         var duplicate = await _db.Rooms
             .AnyAsync(r => r.Id != roomId && r.RoomNo.Trim().ToLower() == roomNo.ToLower());

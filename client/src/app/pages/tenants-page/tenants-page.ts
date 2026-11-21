@@ -1,4 +1,6 @@
 import { Component, computed, HostListener, inject, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { debounceTime, distinctUntilChanged, map, Subject } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
 import { TenantService, TenantPayload } from '../../services/tenant.service';
 import { RoomService } from '../../services/room.service';
@@ -23,6 +25,35 @@ export class TenantsPage {
   showForm = signal(false);
   error = signal('');
 
+  // Search, same pattern as the Bills page (Week 5): keystrokes become a
+  // stream, debounced 250 ms so the list only filters when the user pauses.
+  private searchTerms$ = new Subject<string>();
+  search = toSignal(
+    this.searchTerms$.pipe(
+      map(term => term.trim().toLowerCase()),
+      debounceTime(250),
+      distinctUntilChanged()
+    ),
+    { initialValue: '' }
+  );
+
+  // A tenant matches by name, contact number, or their room number —
+  // e.g. typing "kim" shows Kim, typing "103" shows everyone in Room 103.
+  filteredTenants = computed(() => {
+    const q = this.search();
+    if (q === '') return this.tenants();
+    return this.tenants().filter(t =>
+      t.name.toLowerCase().includes(q) ||
+      t.contact.includes(q) ||
+      this.roomNoFor(t.roomId).toLowerCase().includes(q)
+    );
+  });
+
+  roomNoFor(roomId: number | null): string {
+    if (roomId === null) return '';
+    return this.rooms().find(r => r.id === roomId)?.roomNo ?? '';
+  }
+
   // Active tenants per room, as { roomId: count } — the form disables only full rooms.
   roomOccupancy = computed(() => {
     const counts: Record<number, number> = {};
@@ -46,6 +77,10 @@ export class TenantsPage {
       next: r => this.rooms.set(r),
       error: () => this.error.set('Hindi ma-load ang rooms. Tumatakbo ba ang API?')
     });
+  }
+
+  onSearch(event: Event) {
+    this.searchTerms$.next((event.target as HTMLInputElement).value);
   }
 
   onAddClick() {
@@ -93,8 +128,11 @@ onEscape() {
     this.tenantService.moveOut(id).subscribe(() => this.load());
   }
 
+  // Show the server's message only for 4xx answers. For anything else
+  // (e.g. a 500) the server text can be a stack trace, so show a generic
+  // message instead.
   private messageFrom(err: HttpErrorResponse): string {
-    return typeof err.error === 'string' && err.error
+    return err.status >= 400 && err.status < 500 && typeof err.error === 'string' && err.error
       ? err.error
       : 'May error. Subukan ulit.';
   }

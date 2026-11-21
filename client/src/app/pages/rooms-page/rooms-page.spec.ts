@@ -59,4 +59,69 @@ describe('RoomsPage', () => {
   document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
   expect(component.showForm()).toBe(false);
 });
+
+  // The search stream is debounced (250 ms), so these tests wait in real time.
+  const wait = (ms: number) => new Promise<void>(r => setTimeout(r, ms));
+
+  const type = async (value: string) => {
+    component.onSearch({ target: { value } } as unknown as Event);
+    await wait(300);   // let the debounced search stream emit
+  };
+
+  it('should filter rooms by room number, type, or status', async () => {
+    component.rooms.set([
+      { id: 1, roomNo: '101', monthlyRate: 2500, capacity: 2, status: 'Occupied', type: 'Single' },
+      { id: 2, roomNo: '102', monthlyRate: 3000, capacity: 2, status: 'Vacant', type: 'Studio' },
+      { id: 3, roomNo: '103', monthlyRate: 5000, capacity: 4, status: 'Occupied', type: 'Double-deck' },
+    ]);
+    component.tenants.set([]);
+
+    await type('103');
+    expect(component.filteredRooms().map(r => r.id)).toEqual([3]);
+
+    await type('studio');
+    expect(component.filteredRooms().map(r => r.id)).toEqual([2]);
+
+    await type('vacant');
+    expect(component.filteredRooms().map(r => r.id)).toEqual([2]);
+
+    await type('');
+    expect(component.filteredRooms().map(r => r.id)).toEqual([1, 2, 3]);
+  });
+
+  it('should filter rooms by the name of a tenant living in them', async () => {
+    component.rooms.set([
+      { id: 1, roomNo: '101', monthlyRate: 2500, capacity: 2, status: 'Occupied' },
+      { id: 2, roomNo: '102', monthlyRate: 3000, capacity: 2, status: 'Vacant' },
+    ]);
+    component.tenants.set([
+      { id: 1, name: 'Kim Matibay', contact: '09170000001', roomId: 1, leaseStart: '2026-10-01', isActive: true },
+    ]);
+
+    await type('kim');
+    expect(component.filteredRooms().map(r => r.id)).toEqual([1]);
+  });
+
+  it('should only filter after the user pauses typing (debounced search)', async () => {
+    component.rooms.set([
+      { id: 1, roomNo: '101', monthlyRate: 2500, capacity: 2, status: 'Occupied' },
+      { id: 2, roomNo: '102', monthlyRate: 3000, capacity: 2, status: 'Vacant' },
+    ]);
+    component.tenants.set([]);
+
+    // Fast typing: the list does not filter yet.
+    component.onSearch({ target: { value: '1' } } as unknown as Event);
+    await wait(100);
+    component.onSearch({ target: { value: '10' } } as unknown as Event);
+    await wait(100);
+    component.onSearch({ target: { value: '101' } } as unknown as Event);
+    await wait(100);
+    expect(component.search()).toBe('');
+    expect(component.filteredRooms().map(r => r.id)).toEqual([1, 2]);
+
+    // After a pause, only the latest term applies.
+    await wait(300);
+    expect(component.search()).toBe('101');
+    expect(component.filteredRooms().map(r => r.id)).toEqual([1]);
+  });
 });

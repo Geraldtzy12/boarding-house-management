@@ -173,6 +173,14 @@ public class BillsController : ControllerBase
         if (bill is null) return NotFound();
         if (!bill.IsDeleted) return Conflict("This bill is not deleted.");
 
+        // A new bill of the same type/month may have been created since
+        // this one was deleted (e.g. by Generate) — restoring would break
+        // the unique index, so refuse with a plain message instead of a 500.
+        var duplicate = await _db.Bills.AnyAsync(b =>
+            !b.IsDeleted && b.TenantId == bill.TenantId && b.Month == bill.Month && b.Type == bill.Type);
+        if (duplicate)
+            return Conflict($"This tenant already has a {bill.Type} bill for {bill.Month}.");
+
         bill.IsDeleted = false;
         bill.DeletedOn = null;
         await _db.SaveChangesAsync();

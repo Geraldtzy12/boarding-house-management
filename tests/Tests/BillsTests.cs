@@ -135,6 +135,24 @@ public class BillsTests : ApiTestBase
     }
 
     [Fact]
+    public async Task Restore_after_recreate_is_blocked_with_409()
+    {
+        await AuthorizeAsync();
+        var tenantId = await SetupTenantAsync();
+        var billId = await CreateBillAsync(tenantId, "Electricity", "2026-11", 850, "2026-11-15");
+        await DeleteAsync($"/api/bills/{billId}");
+        await CreateBillAsync(tenantId, "Electricity", "2026-11", 900, "2026-11-15");
+
+        var (status, body) = await PostJsonAsync($"/api/bills/{billId}/restore", new { });
+        Assert.Equal(HttpStatusCode.Conflict, status);
+        Assert.Contains("already has a Electricity bill for 2026-11", body);
+
+        // The old bill stays in the Recycle Bin.
+        var (_, deletedBody) = await GetAsync("/api/bills/deleted");
+        Assert.Contains(BillIds(deletedBody), id => id == billId);
+    }
+
+    [Fact]
     public async Task Delete_forever_removes_a_bill_from_the_recycle_bin()
     {
         await AuthorizeAsync();
@@ -232,7 +250,7 @@ public class BillsTests : ApiTestBase
         var tenantId = await SetupTenantAsync();
 
         var (zeroAmount, _) = await PostJsonAsync("/api/bills",
-            new { tenantId, type = "Electricity", month = "2026-11", amount = 0, dueDate = "2026-11-15", note = (string?)null });
+            new { tenantId, type = "Electricity", month = "11-2026", amount = 0, dueDate = "2026-11-15", note = (string?)null });
         Assert.Equal(HttpStatusCode.BadRequest, zeroAmount);
 
         var (badMonth, _) = await PostJsonAsync("/api/bills",

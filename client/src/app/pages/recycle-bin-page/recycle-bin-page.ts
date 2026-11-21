@@ -88,8 +88,11 @@ export class RecycleBinPage implements OnInit {
       .toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   }
 
+  // Show the server's message only for 4xx answers (plain messages like
+  // "already has a Rent bill"). For anything else (e.g. a 500) the server
+  // text can be a stack trace, so show a generic message instead.
   private messageFrom(err: HttpErrorResponse): string {
-    return typeof err.error === 'string' && err.error
+    return err.status >= 400 && err.status < 500 && typeof err.error === 'string' && err.error
       ? err.error
       : 'Something went wrong. Please try again.';
   }

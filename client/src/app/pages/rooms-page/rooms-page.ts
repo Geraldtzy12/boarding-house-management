@@ -1,4 +1,6 @@
 import { Component, computed, HostListener, inject, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { debounceTime, distinctUntilChanged, map, Subject } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
 import { RoomService } from '../../services/room.service';
 import { TenantService } from '../../services/tenant.service';
@@ -22,6 +24,31 @@ export class RoomsPage {
   editing = signal<Room | null>(null);
   showForm = signal(false);
   error = signal('');
+
+  // Search, same pattern as the Bills page (Week 5): keystrokes become a
+  // stream, debounced 250 ms so the list only filters when the user pauses.
+  private searchTerms$ = new Subject<string>();
+  search = toSignal(
+    this.searchTerms$.pipe(
+      map(term => term.trim().toLowerCase()),
+      debounceTime(250),
+      distinctUntilChanged()
+    ),
+    { initialValue: '' }
+  );
+
+  // A room matches by its number, type, status, or a tenant living in it —
+  // e.g. typing "kim" shows Room 103, typing "103" shows only Room 103.
+  filteredRooms = computed(() => {
+    const q = this.search();
+    if (q === '') return this.rooms();
+    return this.rooms().filter(r =>
+      r.roomNo.toLowerCase().includes(q) ||
+      (r.type ?? '').toLowerCase().includes(q) ||
+      r.status.toLowerCase().includes(q) ||
+      this.tenantNamesFor(r.id).join(' ').toLowerCase().includes(q)
+    );
+  });
 
   // active tenant names per room, so each card can show who rents it
   tenantByRoom = computed(() => {
@@ -52,6 +79,10 @@ export class RoomsPage {
       next: t => this.tenants.set(t),
       error: () => this.error.set('Could not load the tenants. Is the API running?')
     });
+  }
+
+  onSearch(event: Event) {
+    this.searchTerms$.next((event.target as HTMLInputElement).value);
   }
 
   onAddClick() {
@@ -140,8 +171,11 @@ onEscape() {
     });
   }
 
+  // Show the server's message only for 4xx answers (plain messages like
+  // "already has a Rent bill"). For anything else (e.g. a 500) the server
+  // text can be a stack trace, so show a generic message instead.
   private messageFrom(err: HttpErrorResponse): string {
-    return typeof err.error === 'string' && err.error
+    return err.status >= 400 && err.status < 500 && typeof err.error === 'string' && err.error
       ? err.error
       : 'Something went wrong. Please try again.';
   }

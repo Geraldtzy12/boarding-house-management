@@ -78,6 +78,59 @@ public class RoomsTests : ApiTestBase
     }
 
     [Fact]
+    public async Task Create_room_with_Occupied_status_starts_Vacant()
+    {
+        await AuthorizeAsync();
+        var (status, body) = await PostJsonAsync("/api/rooms",
+            new { roomNo = "101", monthlyRate = 2500, capacity = 2, status = "Occupied" });
+        Assert.Equal(HttpStatusCode.Created, status);
+        Assert.Equal("Vacant", JsonDocument.Parse(body).RootElement.GetProperty("status").GetString());
+    }
+
+    [Fact]
+    public async Task Edit_room_status_is_ignored_when_room_has_tenants()
+    {
+        await AuthorizeAsync();
+        var roomId = await CreateRoomAsync("101", 2500, 2);
+        await CreateTenantAsync("Juan Dela Cruz", "09170000001", roomId);
+
+        var (status, _) = await PutJsonAsync($"/api/rooms/{roomId}",
+            new { id = roomId, roomNo = "101", monthlyRate = 2500, capacity = 2, status = "Vacant" });
+        Assert.Equal(HttpStatusCode.NoContent, status);
+
+        var (_, body) = await GetAsync($"/api/rooms/{roomId}");
+        Assert.Equal("Occupied", JsonDocument.Parse(body).RootElement.GetProperty("status").GetString());
+    }
+
+    [Fact]
+    public async Task Edit_room_capacity_below_tenant_count_is_blocked()
+    {
+        await AuthorizeAsync();
+        var roomId = await CreateRoomAsync("101", 2500, 2);
+        await CreateTenantAsync("Juan Dela Cruz", "09170000001", roomId);
+        await CreateTenantAsync("Ana Cruz", "09170000002", roomId);
+
+        var (status, body) = await PutJsonAsync($"/api/rooms/{roomId}",
+            new { id = roomId, roomNo = "101", monthlyRate = 2500, capacity = 1, status = "Occupied" });
+        Assert.Equal(HttpStatusCode.Conflict, status);
+        Assert.Contains("Capacity cannot be less than the 2 tenant(s)", body);
+    }
+
+    [Fact]
+    public async Task Create_room_with_zero_rate_or_capacity_returns_400()
+    {
+        await AuthorizeAsync();
+
+        var (rateStatus, _) = await PostJsonAsync("/api/rooms",
+            new { roomNo = "101", monthlyRate = 0, capacity = 1, status = "Vacant" });
+        Assert.Equal(HttpStatusCode.BadRequest, rateStatus);
+
+        var (capStatus, _) = await PostJsonAsync("/api/rooms",
+            new { roomNo = "102", monthlyRate = 2500, capacity = 0, status = "Vacant" });
+        Assert.Equal(HttpStatusCode.BadRequest, capStatus);
+    }
+
+    [Fact]
     public async Task Create_room_without_a_number_returns_400()
     {
         await AuthorizeAsync();

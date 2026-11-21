@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
+import { HttpErrorResponse } from '@angular/common/http';
 import { RecycleBinPage } from './recycle-bin-page';
 import { BillService } from '../../services/bill.service';
 import { NotificationService, Toast } from '../../services/notification.service';
@@ -28,10 +29,12 @@ describe('RecycleBinPage', () => {
   let notification: NotificationService;
   let restoreCalls = 0;
   let deleteForeverCalls = 0;
+  let restoreError: HttpErrorResponse | null = null;
 
   beforeEach(async () => {
     restoreCalls = 0;
     deleteForeverCalls = 0;
+    restoreError = null;
     await TestBed.configureTestingModule({
       imports: [RecycleBinPage],
       providers: [
@@ -39,7 +42,10 @@ describe('RecycleBinPage', () => {
           provide: BillService,
           useValue: {
             getDeleted: () => of([makeDeletedBill({ id: 9 })]),
-            restore: () => { restoreCalls++; return of(undefined); },
+            restore: () => {
+              restoreCalls++;
+              return restoreError ? throwError(() => restoreError) : of(undefined);
+            },
             deletePermanent: () => { deleteForeverCalls++; return of(undefined); },
           },
         },
@@ -72,6 +78,25 @@ describe('RecycleBinPage', () => {
     restore?.click();
     expect(restoreCalls).toBe(1);
     expect(toasts.map(t => t.message)).toEqual(['Bill restored.']);
+  });
+
+  it('should show the server message when Restore fails with a 409', () => {
+    restoreError = new HttpErrorResponse({
+      error: 'This tenant already has a Rent bill for 2026-11.',
+      status: 409,
+    });
+    component.onRestore(9);
+    expect(component.deletedError()).toBe('This tenant already has a Rent bill for 2026-11.');
+  });
+
+  it('should show a generic message, not the server text, when Restore fails with a 500', () => {
+    restoreError = new HttpErrorResponse({
+      error: 'System.InvalidOperationException: Violation of UNIQUE KEY constraint... at BoardingHouse.Api.Controllers.BillsController.Restore',
+      status: 500,
+    });
+    component.onRestore(9);
+    expect(component.deletedError()).toBe('Something went wrong. Please try again.');
+    expect(component.deletedError()).not.toContain('InvalidOperationException');
   });
 
   it('should ask through the ConfirmModal before deleting forever, and not delete yet', () => {
