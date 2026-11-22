@@ -10,7 +10,7 @@
 /* One amount box per bill type; blank means "no bill for this type". */
 .amounts {
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 8px;
   padding: 12px 14px;
   margin: 12px 0;
   display: grid;
@@ -49,7 +49,7 @@
 .result-list li {
   padding: 10px 12px;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 8px;
   background: #f0fdf4;
 }
 .result-list li.failed {

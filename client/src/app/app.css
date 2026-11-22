@@ -1,4 +1,4 @@
-/* App shell: sidebar + content. */
+/* App shell: dark sidebar + light content. */
 .shell {
   display: flex;
   min-height: 100vh;
@@ -14,13 +14,14 @@
   height: 100vh;
   padding: 24px 16px;
   background: var(--nav);
-  border-right: 1px solid var(--border);
+  border-right: 1px solid #1e293b;
 }
 
 .sidebar h1 {
   margin: 0 8px 24px;
-  font-size: 1.3rem;
-  letter-spacing: .2px;
+  font-size: 1.15rem;
+  letter-spacing: -.02em;
+  color: #f8fafc;
 }
 
 .sidebar nav {
@@ -34,12 +35,12 @@
   align-items: center;
   gap: 12px;
   padding: 10px 14px;
-  border-radius: 999px;
-  color: #57534e;
+  border-radius: 8px;
+  color: #94a3b8;
   text-decoration: none;
   font-weight: 600;
 }
-.sidebar a:hover { background: rgba(28, 25, 23, .06); color: var(--text); }
+.sidebar a:hover { background: rgba(255, 255, 255, .06); color: #f1f5f9; }
 .sidebar a.active { background: var(--primary); color: #fff; }
 .sidebar a svg { flex: none; }
 
@@ -50,7 +51,7 @@
   flex-direction: column;
   gap: 4px;
   padding-top: 16px;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid #1e293b;
 }
 
 .user-chip {
@@ -60,15 +61,15 @@
   width: 100%;
   padding: 8px 14px;
   border: 0;
-  border-radius: 999px;
+  border-radius: 8px;
   background: transparent;
   font: inherit;
   font-weight: 600;
-  color: var(--muted);
+  color: #94a3b8;
   text-align: left;
   cursor: pointer;
 }
-.user-chip:hover { background: rgba(28, 25, 23, .06); color: var(--text); }
+.user-chip:hover { background: rgba(255, 255, 255, .06); color: #f1f5f9; }
 .user-chip .avatar,
 .menu-header .avatar {
   display: inline-flex;
@@ -83,7 +84,7 @@
 }
 .user-chip .chevron {
   margin-left: auto;
-  color: var(--muted);
+  color: #94a3b8;
   transition: transform .15s;
 }
 .user-chip[aria-expanded="true"] .chevron { transform: rotate(180deg); }
@@ -104,7 +105,7 @@
   padding: 6px;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: 12px;
   box-shadow: 0 12px 32px rgba(0, 0, 0, .18);
 }
 .menu-header {
@@ -127,7 +128,7 @@
   width: 100%;
   padding: 10px 12px;
   border: 0;
-  border-radius: 10px;
+  border-radius: 8px;
   background: transparent;
   color: var(--text);
   font: inherit;
@@ -137,7 +138,7 @@
   cursor: pointer;
 }
 .account-menu a:hover,
-.account-menu button:hover { background: rgba(28, 25, 23, .06); }
+.account-menu button:hover { background: rgba(15, 23, 42, .06); }
 .account-menu a svg,
 .account-menu button svg { flex: none; color: var(--muted); }
 .menu-divider {
@@ -163,7 +164,7 @@
     gap: 4px;
     padding: 12px 16px;
     border-right: 0;
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid #1e293b;
     overflow-x: auto;
   }
   .sidebar h1 { margin: 0 12px 0 0; font-size: 1.1rem; white-space: nowrap; }

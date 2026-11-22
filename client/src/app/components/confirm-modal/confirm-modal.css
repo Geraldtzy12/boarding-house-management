@@ -12,8 +12,8 @@
   gap: 12px;
   padding: 28px;
   background: var(--surface);
-  border-radius: 18px;
-  box-shadow: 0 0 0 100vmax rgba(28, 25, 23, .55), 0 24px 60px rgba(0, 0, 0, .35);
+  border-radius: 12px;
+  box-shadow: 0 0 0 100vmax rgba(15, 23, 42, .5), 0 24px 60px rgba(0, 0, 0, .35);
 }
 .confirm-modal h3 {
   margin: 0;
@@ -37,5 +37,5 @@
   border: 1px solid var(--border);
 }
 .confirm-modal button.secondary:hover:not(:disabled) {
-  background: #f5f1ea;
+  background: #f8fafc;
 }

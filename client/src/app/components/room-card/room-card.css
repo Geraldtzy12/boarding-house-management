@@ -22,10 +22,10 @@
 .type-chip {
   display: inline-block;
   margin: 4px 0 8px;
-  padding: 3px 10px;
-  border-radius: 999px;
-  background: #f5f1ea;
-  color: #57534e;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: #f1f5f9;
+  color: #475569;
   font-size: .8rem;
   font-weight: 700;
 }

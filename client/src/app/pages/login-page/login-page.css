@@ -34,7 +34,7 @@
   font-weight: 400;
   padding: 12px 14px;
   border: 1px solid #cbd5e1;
-  border-radius: 10px;
+  border-radius: 8px;
   background: #fff;
 }
 .login-card input:focus { outline: 2px solid var(--primary); outline-offset: 1px; border-color: var(--primary); }
@@ -65,4 +65,4 @@
   color: var(--muted);
   cursor: pointer;
 }
-.password-wrap .eye:hover { background: rgba(28, 25, 23, .06); color: var(--text); }
+.password-wrap .eye:hover { background: rgba(15, 23, 42, .06); color: var(--text); }

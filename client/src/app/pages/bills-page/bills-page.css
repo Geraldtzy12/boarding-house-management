@@ -7,7 +7,7 @@
   border: 1px solid var(--border);
 }
 .generate button.secondary:hover:not(:disabled) {
-  background: #f5f1ea;
+  background: #f8fafc;
 }
 
 /* Search + dropdown filters, one row. */
@@ -22,7 +22,7 @@
   font: inherit;
   padding: 10px 14px;
   border: 1px solid #cbd5e1;
-  border-radius: 10px;
+  border-radius: 8px;
   background: #fff;
 }
 .filters-bar input[type="search"] {
@@ -68,7 +68,7 @@
   border-bottom: 0;
 }
 .bills-table tbody tr:hover {
-  background: #faf7f1;
+  background: #f8fafc;
 }
 .bills-table td.empty {
   color: var(--muted);
@@ -81,6 +81,8 @@
   text-align: right;
   white-space: nowrap;
 }
+/* Space between the action buttons so Pay / Edit / Delete don't touch. */
+.row-actions button + button { margin-left: 8px; }
 .row-actions button.small {
   padding: 6px 12px;
   font-size: .9rem;
@@ -100,5 +102,5 @@
   border: 1px solid var(--border);
 }
 .row-actions button.secondary:hover:not(:disabled) {
-  background: #f5f1ea;
+  background: #f8fafc;
 }

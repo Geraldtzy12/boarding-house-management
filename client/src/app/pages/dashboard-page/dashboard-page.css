@@ -24,19 +24,21 @@
   border: 1px solid var(--border);
 }
 .actions button:hover:not(:disabled) {
-  background: #f5f1ea;
+  background: #f8fafc;
 }
 .actions button svg {
   flex: none;
 }
 
-/* Hero: two big stats beside the house photo. */
+/* Hero: a compact strip with the two big money stats side by side.
+   The photo is hidden — a professional dashboard leads with numbers,
+   and the same two figures already appear in the stat cards below. */
 .hero {
   display: grid;
-  grid-template-columns: 1fr 1.1fr;
-  gap: 36px;
+  grid-template-columns: 1fr;
+  gap: 24px;
   align-items: stretch;
-  padding: 24px;
+  padding: 16px 20px;
   margin: 8px 0 4px;
   background: var(--surface);
   border: 1px solid var(--border);
@@ -46,10 +48,10 @@
 
 .hero-stats {
   display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 28px;
-  padding: 8px 0;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 16px 32px;
+  padding: 4px 0;
 }
 
 .hero-stat span {
@@ -63,36 +65,32 @@
 
 .hero-stat strong {
   display: block;
-  font-size: 2rem;
-  margin: 2px 0 10px;
+  font-size: 1.6rem;
+  margin: 2px 0 8px;
+  font-variant-numeric: tabular-nums;
 }
 
 .hero-photo {
-  display: block;
-  width: 100%;
-  height: 100%;
-  min-height: 220px;
-  object-fit: cover;
-  border-radius: 12px;
+  display: none;
 }
 
 /* Progress bars (hero + Rooms stat). */
 .progress {
   height: 8px;
-  background: #e7e0d4;
+  background: #e2e8f0;
   border-radius: 999px;
   overflow: hidden;
 }
 .progress .fill {
   height: 100%;
-  background: var(--text);
+  background: var(--primary);
   border-radius: 999px;
 }
 .progress .fill-collected {
-  background: #1c1917;
+  background: var(--primary);
 }
 .progress .fill-collect {
-  background: #d6c9a8;
+  background: #a5b4fc;
 }
 .stat .progress {
   margin-top: 10px;
@@ -131,6 +129,7 @@
 
 .amount {
   white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
 .amount.danger {
@@ -154,7 +153,7 @@
 
 /* Vacant rooms as photo cards. */
 .rooms-card {
-  margin-top: 20px;
+  margin-top: 16px;
 }
 
 .room-photos {
@@ -171,12 +170,10 @@
   text-decoration: none;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 16px;
-  transition: transform .15s, box-shadow .15s;
+  border-radius: 8px;
 }
 .room-photo-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(28, 25, 23, .12);
+  border-color: #cbd5e1;
 }
 
 .room-photo-card img {
@@ -192,7 +189,7 @@
 
 /* Latest bills table. */
 .bills-card {
-  margin-top: 20px;
+  margin-top: 16px;
 }
 
 .bills-table {

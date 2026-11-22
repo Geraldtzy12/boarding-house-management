@@ -17,7 +17,7 @@
   color: var(--text);
   border: 1px solid var(--border);
   border-left: 4px solid #059669;
-  border-radius: 12px;
+  border-radius: 8px;
   box-shadow: 0 12px 32px rgba(0, 0, 0, .18);
   font-size: .95rem;
 }
