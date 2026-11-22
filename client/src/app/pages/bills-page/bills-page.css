@@ -94,3 +94,11 @@
 .row-actions button.link:hover:not(:disabled) {
   background: rgba(220, 38, 38, .08);
 }
+.row-actions button.secondary {
+  background: #fff;
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+.row-actions button.secondary:hover:not(:disabled) {
+  background: #f5f1ea;
+}

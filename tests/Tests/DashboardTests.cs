@@ -43,4 +43,25 @@ public class DashboardTests : ApiTestBase
         // even though it was paid today.
         Assert.Equal(150, collected);
     }
+
+    [Fact]
+    public async Task ToCollect_counts_only_the_remaining_balance_after_partial_pay()
+    {
+        await AuthorizeAsync();
+        var roomId = await CreateRoomAsync("101", 5000, 2);
+        var tenantId = await CreateTenantAsync("Juan Dela Cruz", "09170000001", roomId);
+
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        var thisMonth = today.ToString("yyyy-MM");
+        var due = today.AddDays(5).ToString("yyyy-MM-dd");
+
+        var billId = await CreateBillAsync(tenantId, "Rent", thisMonth, 3000, due);
+        await PostJsonAsync($"/api/bills/{billId}/pay", new { amount = 1000 });
+
+        var (status, body) = await GetAsync("/api/dashboard");
+        Assert.Equal(HttpStatusCode.OK, status);
+        var root = JsonDocument.Parse(body).RootElement;
+        Assert.Equal(2000, root.GetProperty("toCollect").GetDecimal());
+        Assert.Equal(0, root.GetProperty("collectedThisMonth").GetDecimal());
+    }
 }

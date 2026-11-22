@@ -75,6 +75,41 @@ public class BillsController : ControllerBase
         return Ok(bill);
     }
 
+    // PUT /api/bills/1 — edit a bill that is not paid yet (type, month,
+    // amount, due date, note). A paid bill is history and cannot be edited.
+    [HttpPut("{id}")]
+    public async Task<IActionResult> Update(int id, UpdateBillRequest request)
+    {
+        var bill = await _db.Bills.Include(b => b.Tenant).FirstOrDefaultAsync(b => b.Id == id);
+        if (bill is null || bill.IsDeleted) return NotFound();
+        if (bill.Status == BillStatus.Paid) return Conflict("This bill is already paid.");
+
+        if (request.Amount <= 0)
+            return BadRequest("The amount must be greater than 0.");
+        if (request.Amount < bill.PaidAmount)
+            return BadRequest($"The amount cannot be less than the {bill.PaidAmount} already paid.");
+        if (string.IsNullOrWhiteSpace(request.Month) || ParseMonth(request.Month) is null)
+            return BadRequest("Use the yyyy-MM format, for example 2026-11.");
+
+        var duplicate = await _db.Bills.AnyAsync(b =>
+            !b.IsDeleted && b.Id != id && b.TenantId == bill.TenantId && b.Month == request.Month && b.Type == request.Type);
+        if (duplicate)
+            return Conflict($"{bill.Tenant?.Name ?? "This tenant"} already has a {request.Type} bill for {request.Month}.");
+
+        bill.Type = request.Type;
+        bill.Month = request.Month;
+        bill.Amount = request.Amount;
+        bill.DueDate = request.DueDate;
+        bill.Note = string.IsNullOrWhiteSpace(request.Note) ? null : request.Note.Trim();
+
+        // A due date moved to the future un-overdues the bill.
+        if (bill.Status == BillStatus.Overdue && bill.DueDate >= DateOnly.FromDateTime(DateTime.Today))
+            bill.Status = BillStatus.Pending;
+
+        await _db.SaveChangesAsync();
+        return NoContent();
+    }
+
     // POST /api/bills/generate?month=2026-11  (Rent only; no month = current month)
     [HttpPost("generate")]
     public async Task<IActionResult> Generate([FromQuery] string? month)
@@ -124,14 +159,34 @@ public class BillsController : ControllerBase
         return Ok(new { month = monthKey, created = created.Count });
     }
 
-    // POST /api/bills/1/pay
+    // POST /api/bills/1/pay — full pay when no amount is sent, or a partial
+    // payment when one is: { "amount": 1500 }. A partial payment adds to
+    // PaidAmount and leaves the bill Pending/Overdue; paying the rest (or
+    // more) marks it Paid like before.
     [HttpPost("{id}/pay")]
-    public async Task<IActionResult> Pay(int id)
+    public async Task<IActionResult> Pay(int id, PayBillRequest? request)
     {
         var bill = await _db.Bills.FindAsync(id);
         if (bill is null || bill.IsDeleted) return NotFound();
         if (bill.Status == BillStatus.Paid) return Conflict("This bill is already paid.");
 
+        var remaining = bill.Amount - bill.PaidAmount;
+
+        if (request?.Amount is not null)
+        {
+            if (request.Amount <= 0)
+                return BadRequest("The payment must be greater than 0.");
+
+            if (request.Amount < remaining)
+            {
+                bill.PaidAmount += request.Amount.Value;
+                await _db.SaveChangesAsync();
+                return NoContent();
+            }
+            // amount >= remaining: fall through to a full pay below.
+        }
+
+        bill.PaidAmount = bill.Amount;
         bill.Status = BillStatus.Paid;
         bill.PaidOn = DateOnly.FromDateTime(DateTime.Today);
         await _db.SaveChangesAsync();
@@ -232,3 +287,12 @@ public record CreateBillRequest(
     decimal Amount,
     DateOnly DueDate,
     string? Note);
+
+public record UpdateBillRequest(
+    BillType Type,
+    string Month,
+    decimal Amount,
+    DateOnly DueDate,
+    string? Note);
+
+public record PayBillRequest(decimal? Amount);

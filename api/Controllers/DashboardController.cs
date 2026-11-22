@@ -27,6 +27,8 @@ public class DashboardController : ControllerBase
         // Collected this month = paid bills FOR this month (the bill's Month),
         // not by the date the money came in: a December rent bill paid in
         // November belongs to December's total, same as the History page groups it.
+        // To collect / overdue count what is still owed (Amount - PaidAmount),
+        // so a partly paid bill only counts its remaining balance.
         var currentMonth = today.ToString("yyyy-MM");
         var paidThisMonth = bills.Where(b =>
             b.Status == BillStatus.Paid &&
@@ -43,11 +45,11 @@ public class DashboardController : ControllerBase
             VacantRooms: rooms.Count(r => r.Status == RoomStatus.Vacant),
             ActiveTenants: await _db.Tenants.CountAsync(t => t.IsActive),
             CollectedThisMonth: paidThisMonth.Sum(b => b.Amount),
-            ToCollect: bills.Where(b => b.Status != BillStatus.Paid).Sum(b => b.Amount),
+            ToCollect: bills.Where(b => b.Status != BillStatus.Paid).Sum(b => b.Amount - b.PaidAmount),
             OverdueCount: overdue.Count,
-            OverdueAmount: overdue.Sum(b => b.Amount),
+            OverdueAmount: overdue.Sum(b => b.Amount - b.PaidAmount),
             OverdueBills: overdue.Take(5).Select(b => new OverdueBill(
-                b.Id, b.Tenant?.Name ?? "—", b.RoomNo, b.Type.ToString(), b.Amount, b.DueDate)).ToList(),
+                b.Id, b.Tenant?.Name ?? "—", b.RoomNo, b.Type.ToString(), b.Amount - b.PaidAmount, b.DueDate)).ToList(),
             VacantRoomList: rooms
                 .Where(r => r.Status == RoomStatus.Vacant)
                 .OrderBy(r => r.RoomNo)

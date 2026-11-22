@@ -6,7 +6,7 @@
   </div>
 </div>
 
-@if (error() && !showForm()) {
+@if (error() && !showForm() && !payingBill() && !editingBill()) {
   <p class="error">{{ error() }}</p>
 }
 
@@ -54,7 +54,7 @@
   <div class="table-wrap">
     <table class="bills-table">
       <thead>
-        <tr><th>Tenant</th><th>Room</th><th>Type</th><th>Amount</th><th>Due</th><th>Status</th><th>Actions</th></tr>
+        <tr><th>Tenant</th><th>Room</th><th>Type</th><th>Amount</th><th>Paid</th><th>Due</th><th>Status</th><th>Actions</th></tr>
       </thead>
       <tbody>
         @for (b of filtered(); track b.id) {
@@ -63,6 +63,7 @@
             <td>{{ b.roomNo }}</td>
             <td>{{ b.type }}</td>
             <td>{{ b.amount | currency:'PHP' }}</td>
+            <td>{{ (b.paidAmount ?? 0) > 0 ? ((b.paidAmount ?? 0) | currency:'PHP') : '—' }}</td>
             <td>{{ dueLabel(b) }}</td>
             <td>
               @switch (b.status) {
@@ -73,12 +74,13 @@
               }
             </td>
             <td class="row-actions">
-              <button class="small" (click)="onPay(b.id)">Mark as paid</button>
+              <button class="small" (click)="onPayClick(b)">Pay</button>
+              <button class="small secondary" (click)="onEditClick(b)">Edit</button>
               <button class="link" (click)="onRemoveClick(b)">Delete</button>
             </td>
           </tr>
         } @empty {
-          <tr><td colspan="7" class="empty">No bills to collect.</td></tr>
+          <tr><td colspan="8" class="empty">No bills to collect.</td></tr>
         }
       </tbody>
     </table>
@@ -127,4 +129,63 @@
     <p>{{ b.tenant?.name ?? '—' }} · {{ b.type }} · Room {{ b.roomNo }} · {{ b.amount | currency:'PHP' }}</p>
     <p class="muted">It will go to the Recycle Bin in Settings, where you can restore it.</p>
   </app-confirm-modal>
+}
+
+@if (payingBill(); as b) {
+  <form class="form" (ngSubmit)="onConfirmPay()" (keydown.escape)="onCancelPay()">
+    <h3>Pay bill</h3>
+
+    @if (error()) {
+      <p class="error">{{ error() }}</p>
+    }
+
+    <p>{{ b.tenant?.name ?? '—' }} · {{ b.type }} · Room {{ b.roomNo }} · {{ b.month }}</p>
+    <p>Amount: {{ b.amount | currency:'PHP' }} · Paid: {{ (b.paidAmount ?? 0) | currency:'PHP' }} · Remaining: {{ remaining(b) | currency:'PHP' }}</p>
+
+    <label>Amount to pay (PHP)
+      <input name="payAmount" type="number" min="0" [(ngModel)]="payAmount" />
+    </label>
+
+    @if (payAmount() > 0 && payAmount() < remaining(b)) {
+      <p class="message">Partial payment — {{ remaining(b) - payAmount() | currency:'PHP' }} will remain.</p>
+    }
+
+    <div class="actions">
+      <button type="submit" [disabled]="!payValid()">Pay</button>
+      <button type="button" (click)="onCancelPay()">Cancel</button>
+    </div>
+  </form>
+}
+
+@if (editingBill(); as b) {
+  <form class="form" (ngSubmit)="onConfirmEdit()" (keydown.escape)="onCancelEdit()">
+    <h3>Edit bill</h3>
+
+    @if (error()) {
+      <p class="error">{{ error() }}</p>
+    }
+
+    <p>{{ b.tenant?.name ?? '—' }} · {{ b.type }} · {{ b.month }}</p>
+
+    <label>Amount (PHP)
+      <input name="editAmount" type="number" min="0" [(ngModel)]="editAmount" />
+    </label>
+
+    @if (editAmount() < (b.paidAmount ?? 0)) {
+      <p class="error">The amount cannot be less than the {{ (b.paidAmount ?? 0) | currency:'PHP' }} already paid.</p>
+    }
+
+    <label>Due date
+      <input name="editDueDate" type="date" [(ngModel)]="editDueDate" />
+    </label>
+
+    <label>Note
+      <input name="editNote" [(ngModel)]="editNote" />
+    </label>
+
+    <div class="actions">
+      <button type="submit" [disabled]="!editValid()">Save</button>
+      <button type="button" (click)="onCancelEdit()">Cancel</button>
+    </div>
+  </form>
 }

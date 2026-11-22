@@ -48,6 +48,21 @@ app-recycle-bin-page {
 }
 .toolbar h2 { margin: 0; font-size: 1.9rem; }
 
+/* The search box in the toolbar (Rooms + Tenants): wide enough that the
+   placeholder text fits — it used to be the browser's tiny default width. */
+.toolbar input[type="search"] {
+  flex: 1;
+  min-width: 240px;
+  max-width: 420px;
+  font: inherit;
+  padding: 10px 16px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
+}
+.toolbar input[type="search"]:focus { outline: 2px solid var(--primary); outline-offset: 1px; border-color: var(--primary); }
+
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));

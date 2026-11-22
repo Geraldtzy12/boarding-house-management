@@ -11,6 +11,7 @@ export interface Bill {
   type: BillType;
   month: string;        // 'yyyy-MM'
   amount: number;
+  paidAmount: number;   // magkano na ang nabayaran (partial payments); 0 kapag wala pa
   dueDate: string;      // 'yyyy-MM-dd'
   status: BillStatus;
   paidOn: string | null;

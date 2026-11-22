@@ -257,4 +257,142 @@ public class BillsTests : ApiTestBase
             new { tenantId, type = "Electricity", month = "11-2026", amount = 850, dueDate = "2026-11-15", note = (string?)null });
         Assert.Equal(HttpStatusCode.BadRequest, badMonth);
     }
+
+    [Fact]
+    public async Task Edit_pending_bill_changes_amount_due_date_and_note()
+    {
+        await AuthorizeAsync();
+        var tenantId = await SetupTenantAsync();
+        var billId = await CreateBillAsync(tenantId, "Electricity", "2026-11", 850, "2026-11-15");
+
+        var (status, _) = await PutJsonAsync($"/api/bills/{billId}",
+            new { type = "Electricity", month = "2026-11", amount = 900, dueDate = "2026-11-20", note = "Meter reading corrected" });
+        Assert.Equal(HttpStatusCode.NoContent, status);
+
+        var (_, body) = await GetAsync("/api/bills?month=2026-11");
+        var bill = JsonDocument.Parse(body).RootElement[0];
+        Assert.Equal(900, bill.GetProperty("amount").GetDecimal());
+        Assert.Equal("2026-11-20", bill.GetProperty("dueDate").GetString());
+        Assert.Equal("Meter reading corrected", bill.GetProperty("note").GetString());
+    }
+
+    [Fact]
+    public async Task Edit_paid_bill_is_blocked()
+    {
+        await AuthorizeAsync();
+        var tenantId = await SetupTenantAsync();
+        var billId = await CreateBillAsync(tenantId, "Rent", "2026-11", 3500, "2026-11-01");
+        await PostJsonAsync($"/api/bills/{billId}/pay", new { });
+
+        var (status, body) = await PutJsonAsync($"/api/bills/{billId}",
+            new { type = "Rent", month = "2026-11", amount = 3000, dueDate = "2026-11-01", note = (string?)null });
+        Assert.Equal(HttpStatusCode.Conflict, status);
+        Assert.Contains("already paid", body);
+    }
+
+    [Fact]
+    public async Task Edit_bill_to_duplicate_type_and_month_is_blocked()
+    {
+        await AuthorizeAsync();
+        var tenantId = await SetupTenantAsync();
+        await CreateBillAsync(tenantId, "Electricity", "2026-11", 850, "2026-11-15");
+        var waterId = await CreateBillAsync(tenantId, "Water", "2026-11", 150, "2026-11-15");
+
+        var (status, body) = await PutJsonAsync($"/api/bills/{waterId}",
+            new { type = "Electricity", month = "2026-11", amount = 150, dueDate = "2026-11-15", note = (string?)null });
+        Assert.Equal(HttpStatusCode.Conflict, status);
+        Assert.Contains("already has a Electricity bill for 2026-11", body);
+    }
+
+    [Fact]
+    public async Task Edit_amount_below_paid_amount_is_blocked()
+    {
+        await AuthorizeAsync();
+        var tenantId = await SetupTenantAsync();
+        var due = DateOnly.FromDateTime(DateTime.Today).AddDays(5).ToString("yyyy-MM-dd");
+        var billId = await CreateBillAsync(tenantId, "Rent", "2026-11", 3000, due);
+        await PostJsonAsync($"/api/bills/{billId}/pay", new { amount = 1500 });
+
+        var (status, _) = await PutJsonAsync($"/api/bills/{billId}",
+            new { type = "Rent", month = "2026-11", amount = 1000, dueDate = "2026-11-01", note = (string?)null });
+        Assert.Equal(HttpStatusCode.BadRequest, status);
+    }
+
+    [Fact]
+    public async Task Edit_missing_bill_returns_404()
+    {
+        await AuthorizeAsync();
+        var (status, _) = await PutJsonAsync("/api/bills/999",
+            new { type = "Rent", month = "2026-11", amount = 3000, dueDate = "2026-11-01", note = (string?)null });
+        Assert.Equal(HttpStatusCode.NotFound, status);
+    }
+
+    [Fact]
+    public async Task Partial_pay_keeps_bill_pending_with_paid_amount()
+    {
+        await AuthorizeAsync();
+        var tenantId = await SetupTenantAsync();
+        // Due date in the future so RefreshOverdue does not flip it first.
+        var due = DateOnly.FromDateTime(DateTime.Today).AddDays(5).ToString("yyyy-MM-dd");
+        var billId = await CreateBillAsync(tenantId, "Rent", "2026-11", 3000, due);
+
+        var (status, _) = await PostJsonAsync($"/api/bills/{billId}/pay", new { amount = 1500 });
+        Assert.Equal(HttpStatusCode.NoContent, status);
+
+        var (_, body) = await GetAsync("/api/bills?month=2026-11");
+        var bill = JsonDocument.Parse(body).RootElement[0];
+        Assert.Equal("Pending", bill.GetProperty("status").GetString());
+        Assert.Equal(1500, bill.GetProperty("paidAmount").GetDecimal());
+        Assert.Null(bill.GetProperty("paidOn").GetString());
+    }
+
+    [Fact]
+    public async Task Partial_pay_then_the_rest_marks_bill_paid()
+    {
+        await AuthorizeAsync();
+        var tenantId = await SetupTenantAsync();
+        var due = DateOnly.FromDateTime(DateTime.Today).AddDays(5).ToString("yyyy-MM-dd");
+        var billId = await CreateBillAsync(tenantId, "Rent", "2026-11", 3000, due);
+
+        await PostJsonAsync($"/api/bills/{billId}/pay", new { amount = 1500 });
+        var (status, _) = await PostJsonAsync($"/api/bills/{billId}/pay", new { amount = 1500 });
+        Assert.Equal(HttpStatusCode.NoContent, status);
+
+        var (_, body) = await GetAsync("/api/bills?month=2026-11");
+        var bill = JsonDocument.Parse(body).RootElement[0];
+        Assert.Equal("Paid", bill.GetProperty("status").GetString());
+        Assert.Equal(3000, bill.GetProperty("paidAmount").GetDecimal());
+        Assert.False(string.IsNullOrEmpty(bill.GetProperty("paidOn").GetString()));
+    }
+
+    [Fact]
+    public async Task Pay_more_than_remaining_marks_bill_paid()
+    {
+        await AuthorizeAsync();
+        var tenantId = await SetupTenantAsync();
+        var due = DateOnly.FromDateTime(DateTime.Today).AddDays(5).ToString("yyyy-MM-dd");
+        var billId = await CreateBillAsync(tenantId, "Rent", "2026-11", 3000, due);
+
+        var (status, _) = await PostJsonAsync($"/api/bills/{billId}/pay", new { amount = 5000 });
+        Assert.Equal(HttpStatusCode.NoContent, status);
+
+        var (_, body) = await GetAsync("/api/bills?month=2026-11");
+        var bill = JsonDocument.Parse(body).RootElement[0];
+        Assert.Equal("Paid", bill.GetProperty("status").GetString());
+        Assert.Equal(3000, bill.GetProperty("paidAmount").GetDecimal());
+    }
+
+    [Fact]
+    public async Task Pay_zero_or_negative_amount_is_blocked()
+    {
+        await AuthorizeAsync();
+        var tenantId = await SetupTenantAsync();
+        var billId = await CreateBillAsync(tenantId, "Rent", "2026-11", 3000, "2026-11-01");
+
+        var (zeroStatus, _) = await PostJsonAsync($"/api/bills/{billId}/pay", new { amount = 0 });
+        Assert.Equal(HttpStatusCode.BadRequest, zeroStatus);
+
+        var (negativeStatus, _) = await PostJsonAsync($"/api/bills/{billId}/pay", new { amount = -100 });
+        Assert.Equal(HttpStatusCode.BadRequest, negativeStatus);
+    }
 }

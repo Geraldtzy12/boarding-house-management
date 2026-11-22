@@ -2,8 +2,9 @@ import { AfterViewInit, Component, computed, ElementRef, HostListener, inject, O
 import { toSignal } from '@angular/core/rxjs-interop';
 import { catchError, debounceTime, distinctUntilChanged, firstValueFrom, map, of, Subject, switchMap } from 'rxjs';
 import { CurrencyPipe } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
-import { BillService, BillPayload } from '../../services/bill.service';
+import { BillService, BillPayload, BillUpdatePayload } from '../../services/bill.service';
 import { TenantService } from '../../services/tenant.service';
 import { RoomService } from '../../services/room.service';
 import { Bill, BillStatus, BillType } from '../../models/bill';
@@ -26,7 +27,7 @@ function monthLabel(month: string): string {
 
 @Component({
   selector: 'app-bills-page',
-  imports: [BillForm, CurrencyPipe, ConfirmModal],
+  imports: [BillForm, CurrencyPipe, ConfirmModal, FormsModule],
   templateUrl: './bills-page.html',
   styleUrl: './bills-page.css'
 })
@@ -88,6 +89,21 @@ export class BillsPage implements OnInit, AfterViewInit {
   saving = signal(false);   // the multi-bill save is running
   saveResult = signal<BillSaveResult[] | null>(null);   // what the last save created, and what it did not
   pendingDelete = signal<Bill | null>(null);   // bill na hinihintay i-confirm ang delete
+  payingBill = signal<Bill | null>(null);   // bill na binabayaran (partial o full)
+  payAmount = signal(0);
+  editingBill = signal<Bill | null>(null);   // bill na ine-edit
+  editAmount = signal(0);
+  editDueDate = signal('');
+  editNote = signal('');
+
+  // Pay is valid when the amount is more than 0; Edit is valid when the
+  // amount is more than 0, not below what is already paid, and a due date is set.
+  payValid = computed(() => this.payingBill() !== null && this.payAmount() > 0);
+  editValid = computed(() => {
+    const bill = this.editingBill();
+    return bill !== null && this.editAmount() > 0 &&
+      this.editAmount() >= (bill.paidAmount ?? 0) && this.editDueDate() !== '';
+  });
 
   // only active tenants with a room
   billableTenants = computed(() => this.tenants().filter(t => t.roomId !== null));
@@ -161,10 +177,12 @@ export class BillsPage implements OnInit, AfterViewInit {
     this.showForm.set(false);
   }
 
-  // Escape closes the open form or the delete confirmation, wherever the focus is.
+  // Escape closes the open form, the pay or edit modal, or the delete confirmation, wherever the focus is.
   @HostListener('document:keydown.escape')
   onEscape() {
     if (this.pendingDelete()) this.onCancelDelete();
+    else if (this.payingBill()) this.onCancelPay();
+    else if (this.editingBill()) this.onCancelEdit();
     else if (this.showForm()) this.onCancel();
   }
 
@@ -211,15 +229,82 @@ export class BillsPage implements OnInit, AfterViewInit {
     });
   }
 
-  onPay(id: number) {
+  // What is still owed on a bill (Amount - PaidAmount).
+  remaining(b: Bill): number {
+    return b.amount - (b.paidAmount ?? 0);
+  }
+
+  onPayClick(bill: Bill) {
     this.error.set('');
-    this.billService.pay(id).subscribe({
+    this.payingBill.set(bill);
+    this.payAmount.set(this.remaining(bill));   // pre-fill with the full remaining balance
+  }
+
+  onCancelPay() {
+    this.payingBill.set(null);
+  }
+
+  // Pay the typed amount: full pay when it covers the remaining balance,
+  // partial pay when it does not.
+  onConfirmPay() {
+    const bill = this.payingBill();
+    if (!bill) return;
+    const amount = this.payAmount();
+    if (!(amount > 0)) return;
+    this.error.set('');
+    this.billService.pay(bill.id, amount).subscribe({
       next: () => {
-        this.notification.success('Bill marked as paid.');
+        this.payingBill.set(null);
+        if (amount >= this.remaining(bill)) {
+          this.notification.success('Bill marked as paid.');
+        } else {
+          this.notification.success(`${this.peso(amount)} paid. ${this.peso(this.remaining(bill) - amount)} remaining.`);
+        }
         this.load();
       },
       error: (err: HttpErrorResponse) => this.error.set(this.messageFrom(err))
     });
+  }
+
+  onEditClick(bill: Bill) {
+    this.error.set('');
+    this.editingBill.set(bill);
+    this.editAmount.set(bill.amount);
+    this.editDueDate.set(bill.dueDate);
+    this.editNote.set(bill.note ?? '');
+  }
+
+  onCancelEdit() {
+    this.editingBill.set(null);
+  }
+
+  // Save the edited amount, due date and note. Type and month stay as they
+  // are — changing them can create a duplicate for that month.
+  onConfirmEdit() {
+    const bill = this.editingBill();
+    if (!bill) return;
+    const amount = this.editAmount();
+    if (!(amount > 0) || amount < (bill.paidAmount ?? 0) || !this.editDueDate()) return;
+    this.error.set('');
+    const payload: BillUpdatePayload = {
+      type: bill.type,
+      month: bill.month,
+      amount,
+      dueDate: this.editDueDate(),
+      note: this.editNote().trim() === '' ? null : this.editNote().trim()
+    };
+    this.billService.update(bill.id, payload).subscribe({
+      next: () => {
+        this.editingBill.set(null);
+        this.notification.success('Bill updated.');
+        this.load();
+      },
+      error: (err: HttpErrorResponse) => this.error.set(this.messageFrom(err))
+    });
+  }
+
+  private peso(n: number): string {
+    return n.toLocaleString('en-PH', { style: 'currency', currency: 'PHP' });
   }
 
   onRemoveClick(bill: Bill) {

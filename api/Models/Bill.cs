@@ -24,6 +24,7 @@ public class Bill
     public BillType Type { get; set; } = BillType.Rent;
     public string Month { get; set; } = string.Empty;    // 'yyyy-MM'
     public decimal Amount { get; set; }
+    public decimal PaidAmount { get; set; }   // magkano na ang nabayaran (partial payments); 0 kapag wala pa
     public DateOnly DueDate { get; set; }
     public BillStatus Status { get; set; } = BillStatus.Pending;
     public DateOnly? PaidOn { get; set; }

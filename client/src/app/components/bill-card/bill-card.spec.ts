@@ -28,6 +28,7 @@ describe('BillCard', () => {
       type: 'Rent',
       month: '2026-11',
       amount: 3500,
+      paidAmount: 0,
       dueDate: '2026-11-10',
       status: 'Pending',
       paidOn: null,

@@ -14,6 +14,7 @@ function makeDeletedBill(partial: Partial<Bill> & { id: number }): Bill {
     type: 'Rent',
     month: '2026-11',
     amount: 3000,
+    paidAmount: 3000,
     dueDate: '2026-11-01',
     status: 'Paid',
     paidOn: '2026-11-10',

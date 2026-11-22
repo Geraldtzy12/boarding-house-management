@@ -2,7 +2,8 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
 import { BillsPage } from './bills-page';
-import { BillService, BillPayload } from '../../services/bill.service';
+import { BillService, BillPayload, BillUpdatePayload } from '../../services/bill.service';
+import { NotificationService, Toast } from '../../services/notification.service';
 import { TenantService } from '../../services/tenant.service';
 import { RoomService } from '../../services/room.service';
 import { Bill, BillType } from '../../models/bill';
@@ -27,6 +28,7 @@ function makeBill(partial: Partial<Bill> & { id: number }): Bill {
     type: 'Rent',
     month: '2026-11',
     amount: 3500,
+    paidAmount: 0,
     dueDate: '2026-11-01',
     status: 'Pending',
     paidOn: null,
@@ -66,12 +68,18 @@ describe('BillsPage', () => {
   let createdPayloads: BillPayload[] = [];
   let createFailFor: BillType | null = null;
 
+  // What the pay and edit modals tried to send.
+  let payCalls: { id: number; amount?: number }[] = [];
+  let updateCalls: { id: number; payload: BillUpdatePayload }[] = [];
+
   beforeEach(async () => {
     mockBills = [];
     mockTenants = [];
     mockRooms = [];
     createdPayloads = [];
     createFailFor = null;
+    payCalls = [];
+    updateCalls = [];
     await TestBed.configureTestingModule({
       imports: [BillsPage],
       providers: [
@@ -93,7 +101,14 @@ describe('BillsPage', () => {
               generatedMonth = month;
               return of({ created: 1, month: '2026-11' });
             },
-            pay: () => of(undefined),
+            pay: (id: number, amount?: number) => {
+              payCalls.push({ id, amount });
+              return of(undefined);
+            },
+            update: (id: number, payload: BillUpdatePayload) => {
+              updateCalls.push({ id, payload });
+              return of(undefined);
+            },
             delete: () => of(undefined),
           },
         },
@@ -311,5 +326,109 @@ describe('BillsPage', () => {
     expect(roomOptions.map(o => o.textContent?.trim())).toContain('Room 103');
     const tenantOptions = Array.from(fixture.nativeElement.querySelectorAll('select[name="tenantId"] option')) as HTMLOptionElement[];
     expect(tenantOptions.map(o => o.textContent?.trim())).toEqual(['-- Choose a room first --']);
+  });
+
+  it('should show the paid amount in the Paid column, or a dash when nothing is paid yet', () => {
+    loadBills([
+      makeBill({ id: 1, amount: 3000, paidAmount: 1500 }),
+      makeBill({ id: 2, amount: 850, paidAmount: 0, type: 'Electricity' }),
+    ]);
+    fixture.detectChanges();
+    const rows = Array.from(fixture.nativeElement.querySelectorAll('tbody tr')) as HTMLElement[];
+    expect(rows.length).toBe(2);
+    // Columns: Tenant | Room | Type | Amount | Paid | Due | Status | Actions
+    expect(rows[0].children[4].textContent).toContain('₱1,500.00');
+    expect(rows[1].children[4].textContent?.trim()).toBe('—');
+  });
+
+  it('should open the pay modal pre-filled with the remaining balance', () => {
+    const bill = makeBill({ id: 1, amount: 3000, paidAmount: 1000 });
+    component.onPayClick(bill);
+    expect(component.payingBill()).toEqual(bill);
+    expect(component.payAmount()).toBe(2000);
+    expect(component.remaining(bill)).toBe(2000);
+  });
+
+  it('should record a partial payment and say how much remains', () => {
+    let toasts: Toast[] = [];
+    TestBed.inject(NotificationService).toasts$.subscribe(t => toasts = t);
+
+    const bill = makeBill({ id: 1, amount: 3000, paidAmount: 1000 });
+    component.onPayClick(bill);
+    component.payAmount.set(500);
+    component.onConfirmPay();
+
+    expect(payCalls).toEqual([{ id: 1, amount: 500 }]);
+    expect(component.payingBill()).toBeNull();
+    expect(toasts.map(t => t.message)).toEqual(['₱500.00 paid. ₱1,500.00 remaining.']);
+  });
+
+  it('should mark the bill paid when the amount covers the remaining balance', () => {
+    let toasts: Toast[] = [];
+    TestBed.inject(NotificationService).toasts$.subscribe(t => toasts = t);
+
+    const bill = makeBill({ id: 1, amount: 3000, paidAmount: 1000 });
+    component.onPayClick(bill);
+    component.onConfirmPay();   // pre-filled with the remaining 2000
+
+    expect(payCalls).toEqual([{ id: 1, amount: 2000 }]);
+    expect(toasts.map(t => t.message)).toEqual(['Bill marked as paid.']);
+  });
+
+  it('should not pay when the amount is 0', () => {
+    component.onPayClick(makeBill({ id: 1 }));
+    component.payAmount.set(0);
+    expect(component.payValid()).toBe(false);
+    component.onConfirmPay();
+    expect(payCalls).toEqual([]);
+  });
+
+  it('should close the pay modal when Escape is pressed', () => {
+    component.onPayClick(makeBill({ id: 1 }));
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    expect(component.payingBill()).toBeNull();
+  });
+
+  it('should open the edit modal pre-filled with the bill values', () => {
+    const bill = makeBill({ id: 1, amount: 850, dueDate: '2026-11-15', note: 'Meter reading', type: 'Electricity' });
+    component.onEditClick(bill);
+    expect(component.editingBill()).toEqual(bill);
+    expect(component.editAmount()).toBe(850);
+    expect(component.editDueDate()).toBe('2026-11-15');
+    expect(component.editNote()).toBe('Meter reading');
+  });
+
+  it('should save the edited amount, due date and note', () => {
+    let toasts: Toast[] = [];
+    TestBed.inject(NotificationService).toasts$.subscribe(t => toasts = t);
+
+    const bill = makeBill({ id: 1, amount: 850, dueDate: '2026-11-15', type: 'Electricity', month: '2026-11' });
+    component.onEditClick(bill);
+    component.editAmount.set(900);
+    component.editDueDate.set('2026-11-20');
+    component.editNote.set('Corrected');
+    component.onConfirmEdit();
+
+    expect(updateCalls).toEqual([{
+      id: 1,
+      payload: { type: 'Electricity', month: '2026-11', amount: 900, dueDate: '2026-11-20', note: 'Corrected' },
+    }]);
+    expect(component.editingBill()).toBeNull();
+    expect(toasts.map(t => t.message)).toEqual(['Bill updated.']);
+  });
+
+  it('should block saving an edit below the amount already paid', () => {
+    const bill = makeBill({ id: 1, amount: 3000, paidAmount: 1500 });
+    component.onEditClick(bill);
+    component.editAmount.set(1000);
+    expect(component.editValid()).toBe(false);
+    component.onConfirmEdit();
+    expect(updateCalls).toEqual([]);
+  });
+
+  it('should close the edit modal when Escape is pressed', () => {
+    component.onEditClick(makeBill({ id: 1 }));
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    expect(component.editingBill()).toBeNull();
   });
 });
