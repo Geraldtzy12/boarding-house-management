@@ -10,6 +10,7 @@ public class AppDbContext : DbContext
     public DbSet<Room> Rooms => Set<Room>();
     public DbSet<Tenant> Tenants => Set<Tenant>();
     public DbSet<Bill> Bills => Set<Bill>();
+    public DbSet<AdminAccount> AdminAccounts => Set<AdminAccount>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

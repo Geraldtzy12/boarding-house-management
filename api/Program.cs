@@ -1,8 +1,10 @@
 using System.Text;
 using System.Text.Json.Serialization;
 using BoardingHouse.Api.Data;
+using BoardingHouse.Api.Models;
 using BoardingHouse.Api.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.Extensions.FileProviders;
@@ -18,7 +20,9 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("Default")));
 
 // Single admin account (password from user-secrets or environment, never from git).
-builder.Services.AddSingleton<AdminAuthService>();
+// Scoped, not singleton: the password hash lives in the database, so the
+// service reads it through the scoped AppDbContext on each request.
+builder.Services.AddScoped<AdminAuthService>();
 
 // Login uses JWT. The signing key is a secret: set it with
 //   dotnet user-secrets set "Jwt:Key" "<a long random string>"   (in the api folder)
@@ -62,7 +66,9 @@ var app = builder.Build();
 // `dotnet ef database update`.
 using (var scope = app.Services.CreateScope())
 {
-    scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.Migrate();
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    db.Database.Migrate();
+    SeedAdminAccount(db, scope.ServiceProvider.GetRequiredService<IConfiguration>());
 }
 
 if (app.Environment.IsDevelopment())
@@ -88,6 +94,23 @@ app.UseAuthorization();
 app.MapControllers().RequireAuthorization();
 
 app.Run();
+
+// First run only: copy the password from user-secrets / environment into the
+// database (hashed). Afterwards the Settings page owns the password —
+// changing Admin:Password no longer changes the login password.
+static void SeedAdminAccount(AppDbContext db, IConfiguration config)
+{
+    if (db.AdminAccounts.Any()) return;
+    var password = config["Admin:Password"];
+    if (string.IsNullOrEmpty(password)) return;
+    db.AdminAccounts.Add(new AdminAccount
+    {
+        Id = 1,
+        Username = config["Admin:Username"] ?? "admin",
+        PasswordHash = new PasswordHasher<object>().HashPassword(new object(), password)
+    });
+    db.SaveChanges();
+}
 
 // Makes the top-level Program class visible to the API test project
 // (WebApplicationFactory needs a public entry point).
