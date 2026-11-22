@@ -1,9 +1,10 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { of, throwError } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
 import { BillsPage } from './bills-page';
 import { BillService, BillPayload, BillUpdatePayload } from '../../services/bill.service';
 import { NotificationService, Toast } from '../../services/notification.service';
+import { RealtimeService, BillChangedMessage } from '../../services/realtime.service';
 import { TenantService } from '../../services/tenant.service';
 import { RoomService } from '../../services/room.service';
 import { Bill, BillType } from '../../models/bill';
@@ -72,6 +73,10 @@ describe('BillsPage', () => {
   let payCalls: { id: number; amount?: number }[] = [];
   let updateCalls: { id: number; payload: BillUpdatePayload }[] = [];
 
+  // Bill changes pushed from another tab (Week 9: SignalR).
+  let billsChanged$ = new Subject<BillChangedMessage>();
+  let getAllCalls = 0;
+
   beforeEach(async () => {
     mockBills = [];
     mockTenants = [];
@@ -80,13 +85,15 @@ describe('BillsPage', () => {
     createFailFor = null;
     payCalls = [];
     updateCalls = [];
+    billsChanged$ = new Subject<BillChangedMessage>();
+    getAllCalls = 0;
     await TestBed.configureTestingModule({
       imports: [BillsPage],
       providers: [
         {
           provide: BillService,
           useValue: {
-            getAll: () => of(mockBills),
+            getAll: () => { getAllCalls++; return of(mockBills); },
             create: (payload: BillPayload) => {
               createdPayloads.push(payload);
               if (createFailFor && payload.type === createFailFor) {
@@ -114,6 +121,7 @@ describe('BillsPage', () => {
         },
         { provide: TenantService, useValue: { getAll: () => of(mockTenants) } },
         { provide: RoomService, useValue: { getAll: () => of(mockRooms) } },
+        { provide: RealtimeService, useValue: { billsChanged$, start: () => {}, stop: () => {} } },
       ],
     }).compileComponents();
 
@@ -430,5 +438,12 @@ describe('BillsPage', () => {
     component.onEditClick(makeBill({ id: 1 }));
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
     expect(component.editingBill()).toBeNull();
+  });
+
+  // A bill changed in another tab pushes "billsChanged" here (Week 9: SignalR).
+  it('should reload the bills when a bill changes in another tab', () => {
+    const callsBefore = getAllCalls;
+    billsChanged$.next({ billId: 1, action: 'Paid', tenantName: 'Kim Matibay', amount: 2000, count: 0 });
+    expect(getAllCalls).toBe(callsBefore + 1);
   });
 });

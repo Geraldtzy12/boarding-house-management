@@ -1,9 +1,11 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { of } from 'rxjs';
+import { of, Subject } from 'rxjs';
 import { DashboardPage } from './dashboard-page';
 import { DashboardService } from '../../services/dashboard.service';
 import { BillService } from '../../services/bill.service';
+import { NotificationService } from '../../services/notification.service';
+import { RealtimeService, BillChangedMessage } from '../../services/realtime.service';
 import { DashboardSummary } from '../../models/dashboard';
 
 function makeSummary(partial: Partial<DashboardSummary> = {}): DashboardSummary {
@@ -39,20 +41,33 @@ describe('DashboardPage', () => {
   // The page loads its data through a mocked service (Week 5: toSignal stream).
   let mockSummary: DashboardSummary | null = null;
 
+  // Bill changes pushed from another tab (Week 9: SignalR).
+  let billsChanged$ = new Subject<BillChangedMessage>();
+  let getSummaryCalls = 0;
+  let lastToast = '';
+
   beforeEach(async () => {
     mockSummary = null;
+    billsChanged$ = new Subject<BillChangedMessage>();
+    getSummaryCalls = 0;
+    lastToast = '';
     await TestBed.configureTestingModule({
       imports: [DashboardPage],
       providers: [
         provideRouter([]),
-        { provide: DashboardService, useValue: { getSummary: () => of(mockSummary) } },
+        { provide: DashboardService, useValue: { getSummary: () => { getSummaryCalls++; return of(mockSummary); } } },
         { provide: BillService, useValue: { generate: () => of({ created: 0, month: '2026-11' }) } },
+        { provide: RealtimeService, useValue: { billsChanged$, start: () => {}, stop: () => {} } },
       ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(DashboardPage);
     component = fixture.componentInstance;
     await fixture.whenStable();
+
+    TestBed.inject(NotificationService).toasts$.subscribe(toasts => {
+      lastToast = toasts.length ? toasts[toasts.length - 1].message : '';
+    });
   });
 
   it('should create', () => {
@@ -94,5 +109,17 @@ describe('DashboardPage', () => {
       .toBe('http://localhost:5262/uploads/rooms/5_abc.webp');
     expect(component.imageFor({ id: 5, roomNo: '105', monthlyRate: 3000, capacity: 1, type: null, imageUrl: null }))
       .toBe('rooms/single.webp');
+  });
+
+  // A bill changed in another tab pushes "billsChanged" here (Week 9: SignalR).
+  it('should reload the dashboard when a bill changes in another tab', () => {
+    const callsBefore = getSummaryCalls;
+    billsChanged$.next({ billId: 1, action: 'Created', tenantName: 'Kim Matibay', amount: 4000, count: 0 });
+    expect(getSummaryCalls).toBe(callsBefore + 1);
+  });
+
+  it('should show a toast when a bill is paid in another tab', () => {
+    billsChanged$.next({ billId: 1, action: 'Paid', tenantName: 'Kim Matibay', amount: 2000, count: 0 });
+    expect(lastToast).toBe('Kim Matibay paid ₱2,000.00.');
   });
 });

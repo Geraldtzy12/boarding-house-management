@@ -1,6 +1,6 @@
-import { AfterViewInit, Component, computed, ElementRef, HostListener, inject, OnInit, signal, viewChild } from '@angular/core';
+import { AfterViewInit, Component, computed, ElementRef, HostListener, inject, OnDestroy, OnInit, signal, viewChild } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { catchError, debounceTime, distinctUntilChanged, firstValueFrom, map, of, Subject, switchMap } from 'rxjs';
+import { catchError, debounceTime, distinctUntilChanged, firstValueFrom, map, of, Subject, Subscription, switchMap } from 'rxjs';
 import { CurrencyPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -13,6 +13,7 @@ import { Room } from '../../models/room';
 import { BillForm, BillSaveResult } from '../../components/bill-form/bill-form';
 import { ConfirmModal } from '../../components/confirm-modal/confirm-modal';
 import { NotificationService } from '../../services/notification.service';
+import { RealtimeService } from '../../services/realtime.service';
 
 function currentMonth(): string {
   const d = new Date();
@@ -31,11 +32,13 @@ function monthLabel(month: string): string {
   templateUrl: './bills-page.html',
   styleUrl: './bills-page.css'
 })
-export class BillsPage implements OnInit, AfterViewInit {
+export class BillsPage implements OnInit, AfterViewInit, OnDestroy {
   private billService = inject(BillService);
   private tenantService = inject(TenantService);
   private roomService = inject(RoomService);
   private notification = inject(NotificationService);
+  private realtime = inject(RealtimeService);
+  private realtimeSub?: Subscription;
   error = signal('');
 
   // Template reference variable (Week 3): the search box, focused on arrival.
@@ -153,8 +156,16 @@ export class BillsPage implements OnInit, AfterViewInit {
   paidCount = computed(() => this.bills().filter(b => b.status === 'Paid').length);
 
   // Initialization belongs here, not in the constructor (Week 4: ngOnInit).
+  // A bill changed in another tab pushes "billsChanged" here, so this list
+  // reloads without a refresh (Week 9: SignalR). No toast here — the tab
+  // that made the change already shows its own.
   ngOnInit() {
     this.load();
+    this.realtimeSub = this.realtime.billsChanged$.subscribe(() => this.load());
+  }
+
+  ngOnDestroy() {
+    this.realtimeSub?.unsubscribe();
   }
 
   // The search box is ready to type in as soon as the page opens (Week 3).

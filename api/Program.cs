@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.Json.Serialization;
 using BoardingHouse.Api.Data;
+using BoardingHouse.Api.Hubs;
 using BoardingHouse.Api.Models;
 using BoardingHouse.Api.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -24,6 +25,12 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 // service reads it through the scoped AppDbContext on each request.
 builder.Services.AddScoped<AdminAuthService>();
 
+// Real-time push (Week 9: SignalR). BillEvents is the in-process event
+// publisher (Week 7); the broadcaster forwards its events to browsers.
+builder.Services.AddSignalR();
+builder.Services.AddSingleton<BillEvents>();
+builder.Services.AddHostedService<BillChangedBroadcaster>();
+
 // Login uses JWT. The signing key is a secret: set it with
 //   dotnet user-secrets set "Jwt:Key" "<a long random string>"   (in the api folder)
 // or with the Jwt__Key environment variable.
@@ -45,6 +52,19 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidAudience = builder.Configuration["Jwt:Audience"],
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
             ClockSkew = TimeSpan.Zero
+        };
+        // SignalR sends the token in the query string (?access_token=...)
+        // because a WebSocket handshake cannot carry an Authorization header.
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var accessToken = context.Request.Query["access_token"];
+                if (!string.IsNullOrEmpty(accessToken) &&
+                    context.HttpContext.Request.Path.StartsWithSegments("/hubs"))
+                    context.Token = accessToken;
+                return Task.CompletedTask;
+            }
         };
     });
 builder.Services.AddAuthorization();
@@ -92,6 +112,7 @@ app.UseCors("Client");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers().RequireAuthorization();
+app.MapHub<BoardingHouseHub>("/hubs/board");
 
 app.Run();
 

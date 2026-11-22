@@ -1,12 +1,13 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { catchError, of, Subject, switchMap } from 'rxjs';
+import { catchError, of, Subject, Subscription, switchMap } from 'rxjs';
 import { CurrencyPipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { RouterLink } from '@angular/router';
 import { DashboardService } from '../../services/dashboard.service';
 import { BillService } from '../../services/bill.service';
 import { NotificationService } from '../../services/notification.service';
+import { RealtimeService } from '../../services/realtime.service';
 import { DashboardSummary, VacantRoom } from '../../models/dashboard';
 import { roomImageUrl } from '../../models/room';
 
@@ -21,10 +22,12 @@ function currentMonth(): string {
   templateUrl: './dashboard-page.html',
   styleUrl: './dashboard-page.css'
 })
-export class DashboardPage implements OnInit {
+export class DashboardPage implements OnInit, OnDestroy {
   private dashboardService = inject(DashboardService);
   private billService = inject(BillService);
   private notification = inject(NotificationService);
+  private realtime = inject(RealtimeService);
+  private realtimeSub?: Subscription;
   error = signal('');
 
   // Page load as a STREAM (Week 5: toSignal + switchMap). load() re-fires it.
@@ -39,8 +42,20 @@ export class DashboardPage implements OnInit {
   ), { initialValue: null });
 
   // Initialization belongs here, not in the constructor (Week 4: ngOnInit).
+  // A bill paid in another tab pushes "billsChanged" here, so this page
+  // reloads its numbers without a refresh (Week 9: SignalR).
   ngOnInit() {
     this.load();
+    this.realtimeSub = this.realtime.billsChanged$.subscribe(msg => {
+      this.load();
+      if (msg.action === 'Paid' && msg.tenantName) {
+        this.notification.success(`${msg.tenantName} paid ${this.peso(msg.amount)}.`);
+      }
+    });
+  }
+
+  ngOnDestroy() {
+    this.realtimeSub?.unsubscribe();
   }
 
   load() {
@@ -91,6 +106,10 @@ export class DashboardPage implements OnInit {
   // Uploaded photo if there is one, else the photo for the room's type.
   imageFor(room: VacantRoom): string {
     return roomImageUrl(room);
+  }
+
+  private peso(n: number): string {
+    return n.toLocaleString('en-PH', { style: 'currency', currency: 'PHP' });
   }
 
   // Show the server's message only for 4xx answers (plain messages like

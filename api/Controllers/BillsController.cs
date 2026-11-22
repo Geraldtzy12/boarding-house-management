@@ -1,5 +1,6 @@
 using BoardingHouse.Api.Data;
 using BoardingHouse.Api.Models;
+using BoardingHouse.Api.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,8 +11,13 @@ namespace BoardingHouse.Api.Controllers;
 public class BillsController : ControllerBase
 {
     private readonly AppDbContext _db;
+    private readonly BillEvents _events;
 
-    public BillsController(AppDbContext db) => _db = db;
+    public BillsController(AppDbContext db, BillEvents events)
+    {
+        _db = db;
+        _events = events;
+    }
 
     // GET /api/bills?status=Overdue&month=2026-11
     [HttpGet]
@@ -71,6 +77,11 @@ public class BillsController : ControllerBase
         _db.Bills.Add(bill);
         await _db.SaveChangesAsync();
         await RefreshOverdue();
+        _events.Raise(new BillChangedEventArgs
+        {
+            BillId = bill.Id, Action = "Created",
+            TenantName = tenant.Name, Amount = bill.Amount
+        });
 
         return Ok(bill);
     }
@@ -107,6 +118,11 @@ public class BillsController : ControllerBase
             bill.Status = BillStatus.Pending;
 
         await _db.SaveChangesAsync();
+        _events.Raise(new BillChangedEventArgs
+        {
+            BillId = id, Action = "Updated",
+            TenantName = bill.Tenant?.Name ?? "", Amount = bill.Amount
+        });
         return NoContent();
     }
 
@@ -155,6 +171,12 @@ public class BillsController : ControllerBase
         _db.Bills.AddRange(created);
         await _db.SaveChangesAsync();
         await RefreshOverdue();
+        if (created.Count > 0)
+            _events.Raise(new BillChangedEventArgs
+            {
+                BillId = 0, Action = "Generated",
+                TenantName = "", Amount = 0, Count = created.Count
+            });
 
         return Ok(new { month = monthKey, created = created.Count });
     }
@@ -166,7 +188,7 @@ public class BillsController : ControllerBase
     [HttpPost("{id}/pay")]
     public async Task<IActionResult> Pay(int id, PayBillRequest? request)
     {
-        var bill = await _db.Bills.FindAsync(id);
+        var bill = await _db.Bills.Include(b => b.Tenant).FirstOrDefaultAsync(b => b.Id == id);
         if (bill is null || bill.IsDeleted) return NotFound();
         if (bill.Status == BillStatus.Paid) return Conflict("This bill is already paid.");
 
@@ -181,6 +203,11 @@ public class BillsController : ControllerBase
             {
                 bill.PaidAmount += request.Amount.Value;
                 await _db.SaveChangesAsync();
+                _events.Raise(new BillChangedEventArgs
+                {
+                    BillId = id, Action = "Paid",
+                    TenantName = bill.Tenant?.Name ?? "", Amount = request.Amount.Value
+                });
                 return NoContent();
             }
             // amount >= remaining: fall through to a full pay below.
@@ -190,6 +217,11 @@ public class BillsController : ControllerBase
         bill.Status = BillStatus.Paid;
         bill.PaidOn = DateOnly.FromDateTime(DateTime.Today);
         await _db.SaveChangesAsync();
+        _events.Raise(new BillChangedEventArgs
+        {
+            BillId = id, Action = "Paid",
+            TenantName = bill.Tenant?.Name ?? "", Amount = remaining
+        });
         return NoContent();
     }
 
@@ -205,6 +237,11 @@ public class BillsController : ControllerBase
         bill.IsDeleted = true;
         bill.DeletedOn = DateOnly.FromDateTime(DateTime.Today);
         await _db.SaveChangesAsync();
+        _events.Raise(new BillChangedEventArgs
+        {
+            BillId = id, Action = "Deleted",
+            TenantName = "", Amount = bill.Amount
+        });
         return NoContent();
     }
 
@@ -239,6 +276,11 @@ public class BillsController : ControllerBase
         bill.IsDeleted = false;
         bill.DeletedOn = null;
         await _db.SaveChangesAsync();
+        _events.Raise(new BillChangedEventArgs
+        {
+            BillId = id, Action = "Restored",
+            TenantName = "", Amount = bill.Amount
+        });
         return NoContent();
     }
 
@@ -252,6 +294,11 @@ public class BillsController : ControllerBase
 
         _db.Bills.Remove(bill);
         await _db.SaveChangesAsync();
+        _events.Raise(new BillChangedEventArgs
+        {
+            BillId = id, Action = "DeletedForever",
+            TenantName = "", Amount = bill.Amount
+        });
         return NoContent();
     }
 

@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { App } from './app';
+import { RealtimeService } from './services/realtime.service';
 
 // A fake JWT that AuthService accepts as logged in (expiry far in the future).
 const fakeToken = 'x.eyJleHAiOjk5OTk5OTk5OTl9.x';
@@ -15,7 +16,12 @@ describe('App', () => {
     localStorage.setItem('bh_token', fakeToken);
     await TestBed.configureTestingModule({
       imports: [App],
-      providers: [provideRouter([{ path: 'login', component: DummyComponent }])],
+      providers: [
+        provideRouter([{ path: 'login', component: DummyComponent }]),
+        // The app opens the real-time connection when logged in; the fake
+        // keeps the tests from touching a real SignalR hub.
+        { provide: RealtimeService, useValue: { start: () => {}, stop: () => {} } },
+      ],
     })
       .compileComponents();
   });

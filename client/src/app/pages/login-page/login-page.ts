@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { RealtimeService } from '../../services/realtime.service';
 
 @Component({
   selector: 'app-login-page',
@@ -12,6 +13,7 @@ import { AuthService } from '../../services/auth.service';
 })
 export class LoginPage {
   private auth = inject(AuthService);
+  private realtime = inject(RealtimeService);
   private router = inject(Router);
 
   username = '';
@@ -50,7 +52,10 @@ export class LoginPage {
     }
     this.busy.set(true);
     this.auth.login(this.username.trim(), this.password).subscribe({
-      next: () => this.router.navigate(['/rooms']),
+      next: () => {
+        this.realtime.start();
+        this.router.navigate(['/rooms']);
+      },
       error: (err: HttpErrorResponse) => {
         this.busy.set(false);
         this.error.set(

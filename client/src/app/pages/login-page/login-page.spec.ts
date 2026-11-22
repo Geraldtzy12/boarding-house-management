@@ -4,6 +4,7 @@ import { provideRouter } from '@angular/router';
 import { of, throwError, type Observable } from 'rxjs';
 import { LoginPage } from './login-page';
 import { AuthService } from '../../services/auth.service';
+import { RealtimeService } from '../../services/realtime.service';
 
 describe('LoginPage', () => {
   let component: LoginPage;
@@ -34,7 +35,13 @@ describe('LoginPage', () => {
 
     await TestBed.configureTestingModule({
       imports: [LoginPage],
-      providers: [provideRouter([]), { provide: AuthService, useValue: fakeAuth }],
+      providers: [
+        provideRouter([]),
+        { provide: AuthService, useValue: fakeAuth },
+        // A successful login opens the real-time connection; the fake
+        // keeps the tests from touching a real SignalR hub.
+        { provide: RealtimeService, useValue: { start: () => {}, stop: () => {} } },
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(LoginPage);
@@ -116,7 +123,7 @@ describe('LoginPage', () => {
     expect(resetCalls).toEqual([]);
   });
 
-  it('should show the invalid-code error on a 400', () => {
+  it('should show an error on a 400', () => {
     resetResult = throwError(() => new HttpErrorResponse({ status: 400, error: 'The reset code is invalid or expired.' }));
     component.showForgot.set(true);
     component.codeSent.set(true);
