@@ -26,3 +26,22 @@
     <button type="submit" [disabled]="busy()">Change password</button>
   </form>
 </div>
+
+<div class="card settings-card backup-card">
+  <h3>Backup &amp; Export</h3>
+  <p class="muted">Download a copy of your data. Keep the database backup somewhere safe — it has everything: rooms, tenants, and bills.</p>
+
+  @if (backupMessage()) {
+    <p class="message">{{ backupMessage() }}</p>
+  }
+  @if (backupError()) {
+    <p class="error">{{ backupError() }}</p>
+  }
+
+  <div class="actions">
+    <button type="button" (click)="onDownloadDatabase()" [disabled]="backupBusy()">Download database backup</button>
+    <button type="button" class="secondary" (click)="onExportBills()" [disabled]="backupBusy()">Export bills (CSV)</button>
+    <button type="button" class="secondary" (click)="onExportTenants()" [disabled]="backupBusy()">Export tenants (CSV)</button>
+  </div>
+  <p class="muted hint">The backup is the whole database file (.db). The CSV files open in Excel or WPS Office.</p>
+</div>

@@ -22,3 +22,22 @@
   background: #fff;
 }
 .settings-card input:focus { outline: 2px solid var(--primary); outline-offset: 1px; border-color: var(--primary); }
+
+/* Backup & Export card (below Change password). */
+.backup-card {
+  margin-top: 20px;
+}
+.backup-card .actions {
+  margin-top: 4px;
+}
+.backup-card button.secondary {
+  background: #fff;
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+.backup-card button.secondary:hover:not(:disabled) {
+  background: #f8fafc;
+}
+.backup-card .hint {
+  font-size: .85rem;
+}

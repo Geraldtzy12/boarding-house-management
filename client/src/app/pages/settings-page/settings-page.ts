@@ -2,6 +2,7 @@ import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { AuthService } from '../../services/auth.service';
+import { BackupService } from '../../services/backup.service';
 
 @Component({
   selector: 'app-settings-page',
@@ -11,6 +12,7 @@ import { AuthService } from '../../services/auth.service';
 })
 export class SettingsPage {
   private auth = inject(AuthService);
+  private backup = inject(BackupService);
 
   currentPassword = '';
   newPassword = '';
@@ -18,6 +20,10 @@ export class SettingsPage {
   message = signal('');
   error = signal('');
   busy = signal(false);
+
+  backupMessage = signal('');
+  backupError = signal('');
+  backupBusy = signal(false);
 
   onChangePassword() {
     this.message.set('');
@@ -53,6 +59,34 @@ export class SettingsPage {
           err.status === 401 ? 'The current password is incorrect.'
           : typeof err.error === 'string' && err.error ? err.error
           : 'Could not change the password. Is the API running?');
+      }
+    });
+  }
+
+  onDownloadDatabase() {
+    this.download(this.backup.downloadDatabase(), 'Database backup downloaded.');
+  }
+
+  onExportBills() {
+    this.download(this.backup.exportBills(), 'Bills exported.');
+  }
+
+  onExportTenants() {
+    this.download(this.backup.exportTenants(), 'Tenants exported.');
+  }
+
+  private download(request: ReturnType<BackupService['downloadDatabase']>, successMessage: string) {
+    this.backupMessage.set('');
+    this.backupError.set('');
+    this.backupBusy.set(true);
+    request.subscribe({
+      next: () => {
+        this.backupBusy.set(false);
+        this.backupMessage.set(successMessage);
+      },
+      error: () => {
+        this.backupBusy.set(false);
+        this.backupError.set('Could not download the file. Is the API running?');
       }
     });
   }
