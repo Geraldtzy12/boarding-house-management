@@ -1,34 +1,31 @@
-<div class="toolbar">
-  <h2>Dashboard</h2>
-  <span>{{ monthLabel() }}</span>
-</div>
-
-<div class="actions">
-  <button (click)="onGenerate()">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-    Generate bills
-  </button>
-</div>
-
 @if (error()) {
   <p class="error">{{ error() }}</p>
 }
 
 @if (summary(); as s) {
   <div class="hero">
-    <div class="hero-stats">
-      <div class="hero-stat">
-        <span>Collected this month</span>
-        <strong>{{ s.collectedThisMonth | currency:'PHP':'symbol':'1.0-0' }}</strong>
-        <div class="progress"><div class="fill fill-collected" [style.width.%]="collectedShare(s)"></div></div>
-      </div>
-      <div class="hero-stat">
-        <span>To collect</span>
-        <strong>{{ s.toCollect | currency:'PHP':'symbol':'1.0-0' }}</strong>
-        <div class="progress"><div class="fill fill-collect" [style.width.%]="toCollectShare(s)"></div></div>
-      </div>
+    <div class="hero-text">
+      @if (s.overdueCount > 0) {
+        <p class="hero-alert">
+          @if (s.overdueCount === 1) {
+            1 bill is overdue.
+          } @else {
+            {{ s.overdueCount }} bills are overdue.
+          }
+        </p>
+      }
+      <p class="hero-greeting">Welcome back, Admin</p>
+      <p class="hero-sub">
+        @if (s.overdueCount > 0) {
+          Check the Bills page when you can.
+        } @else {
+          All bills are up to date.
+        }
+      </p>
     </div>
-    <img class="hero-photo" src="hero-boarding-house.webp" alt="Boarding house" />
+    <div class="hero-photo-wrap">
+      <img class="hero-photo" src="hero-boarding-house.webp" alt="Boarding house" />
+    </div>
   </div>
 
   <div class="summary">

@@ -1,44 +1,16 @@
-.toolbar span {
-  color: var(--muted);
-  font-weight: 600;
-}
-
 .summary .stat strong {
   font-size: 1.5rem;
 }
 
-/* Quick actions under the title. */
-.actions {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-  padding: 4px 0 12px;
-}
-/* Quick actions under the title (Option A: all white, with icons). */
-.actions button {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  background: #fff;
-  color: var(--text);
-  border: 1px solid var(--border);
-}
-.actions button:hover:not(:disabled) {
-  background: #f8fafc;
-}
-.actions button svg {
-  flex: none;
-}
-
-/* Hero: a compact strip with the two big money stats side by side.
-   The photo is hidden — a professional dashboard leads with numbers,
-   and the same two figures already appear in the stat cards below. */
+/* Hero photo card (Option D): a white card with the greeting on the left
+   and the boarding-house photo on the right. The money stats live in the
+   stat cards below, not in the banner — so no text sits on top of the photo. */
 .hero {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 24px;
+  display: flex;
+  gap: 14px;
   align-items: stretch;
-  padding: 16px 20px;
+  height: 200px;
+  padding: 12px;
   margin: 8px 0 4px;
   background: var(--surface);
   border: 1px solid var(--border);
@@ -46,32 +18,57 @@
   box-shadow: var(--shadow);
 }
 
-.hero-stats {
+.hero-text {
+  flex: 1.3;
   display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  gap: 16px 32px;
-  padding: 4px 0;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 6px 4px 6px 8px;
 }
 
-.hero-stat span {
-  display: block;
-  font-size: .8rem;
+.hero-greeting {
+  margin: 0;
+  font-size: 1.5rem;
   font-weight: 700;
-  color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: .05em;
+  letter-spacing: -.02em;
+  color: var(--text);
 }
 
-.hero-stat strong {
-  display: block;
-  font-size: 1.6rem;
-  margin: 2px 0 8px;
-  font-variant-numeric: tabular-nums;
+.hero-sub {
+  margin: 0;
+  font-size: .85rem;
+  color: var(--muted);
+}
+
+.hero-alert {
+  display: inline-block;
+  align-self: flex-start;
+  margin: 0;
+  padding: 6px 12px;
+  font-size: .85rem;
+  font-weight: 600;
+  color: #fff;
+  background: #dc2626;
+  border-radius: 6px;
+}
+
+.hero-photo-wrap {
+  flex: 1;
+  position: relative;
+  min-width: 0;
+  border-radius: 6px;
+  overflow: hidden;
 }
 
 .hero-photo {
-  display: none;
+  display: block;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 /* Progress bars (hero + Rooms stat). */
@@ -216,9 +213,13 @@
 
 @media (max-width: 760px) {
   .hero {
-    grid-template-columns: 1fr;
+    height: auto;
+    min-height: 150px;
   }
-  .hero-photo {
-    min-height: 180px;
+  .hero-greeting {
+    font-size: 1.15rem;
+  }
+  .hero-sub {
+    font-size: .8rem;
   }
 }
