@@ -2,46 +2,48 @@
   <h2>Settings</h2>
 </div>
 
-<div class="card settings-card">
-  <h3>Change password</h3>
-  <p class="muted">Your new password takes effect right away. You stay logged in — use it the next time you log in.</p>
+<div class="settings-grid">
+  <div class="card settings-card">
+    <h3>Change password</h3>
+    <p class="muted">Your new password takes effect right away. You stay logged in — use it the next time you log in.</p>
 
-  @if (message()) {
-    <p class="message">{{ message() }}</p>
-  }
-  @if (error()) {
-    <p class="error">{{ error() }}</p>
-  }
+    @if (message()) {
+      <p class="message">{{ message() }}</p>
+    }
+    @if (error()) {
+      <p class="error">{{ error() }}</p>
+    }
 
-  <form (ngSubmit)="onChangePassword()">
-    <label>Current password
-      <input name="currentPassword" type="password" [(ngModel)]="currentPassword" autocomplete="current-password" />
-    </label>
-    <label>New password
-      <input name="newPassword" type="password" [(ngModel)]="newPassword" autocomplete="new-password" />
-    </label>
-    <label>Confirm new password
-      <input name="confirmPassword" type="password" [(ngModel)]="confirmPassword" autocomplete="new-password" />
-    </label>
-    <button type="submit" [disabled]="busy()">Change password</button>
-  </form>
-</div>
-
-<div class="card settings-card backup-card">
-  <h3>Backup &amp; Export</h3>
-  <p class="muted">Download a copy of your data. Keep the database backup somewhere safe — it has everything: rooms, tenants, and bills.</p>
-
-  @if (backupMessage()) {
-    <p class="message">{{ backupMessage() }}</p>
-  }
-  @if (backupError()) {
-    <p class="error">{{ backupError() }}</p>
-  }
-
-  <div class="actions">
-    <button type="button" (click)="onDownloadDatabase()" [disabled]="backupBusy()">Download database backup</button>
-    <button type="button" class="secondary" (click)="onExportBills()" [disabled]="backupBusy()">Export bills (CSV)</button>
-    <button type="button" class="secondary" (click)="onExportTenants()" [disabled]="backupBusy()">Export tenants (CSV)</button>
+    <form (ngSubmit)="onChangePassword()">
+      <label>Current password
+        <input name="currentPassword" type="password" [(ngModel)]="currentPassword" autocomplete="current-password" />
+      </label>
+      <label>New password
+        <input name="newPassword" type="password" [(ngModel)]="newPassword" autocomplete="new-password" />
+      </label>
+      <label>Confirm new password
+        <input name="confirmPassword" type="password" [(ngModel)]="confirmPassword" autocomplete="new-password" />
+      </label>
+      <button type="submit" [disabled]="busy()">Change password</button>
+    </form>
   </div>
-  <p class="muted hint">The backup is the whole database file (.db). The CSV files open in Excel or WPS Office.</p>
+
+  <div class="card settings-card backup-card">
+    <h3>Backup &amp; Export</h3>
+    <p class="muted">Download a copy of your data. Keep the database backup somewhere safe — it has everything: rooms, tenants, and bills.</p>
+
+    @if (backupMessage()) {
+      <p class="message">{{ backupMessage() }}</p>
+    }
+    @if (backupError()) {
+      <p class="error">{{ backupError() }}</p>
+    }
+
+    <div class="actions">
+      <button type="button" (click)="onDownloadDatabase()" [disabled]="backupBusy()">Download database backup</button>
+      <button type="button" class="secondary" (click)="onExportBills()" [disabled]="backupBusy()">Export bills (CSV)</button>
+      <button type="button" class="secondary" (click)="onExportTenants()" [disabled]="backupBusy()">Export tenants (CSV)</button>
+    </div>
+    <p class="muted hint">The backup is the whole database file (.db). The CSV files open in Excel or WPS Office.</p>
+  </div>
 </div>
