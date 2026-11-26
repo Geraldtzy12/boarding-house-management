@@ -93,11 +93,14 @@ using (var scope = app.Services.CreateScope())
 
 if (app.Environment.IsDevelopment())
 {
-    
     app.MapOpenApi();
-    // Serve uploaded room photos from wwwroot/uploads (POST /api/rooms/{id}/image).
-// The folder is created here so serving works even on a fresh clone,
-// where wwwroot does not exist yet when the API first starts.
+}
+
+// Serve uploaded room photos from wwwroot/uploads (POST /api/rooms/{id}/image).
+// This runs in every environment, not just Development, so the photos also
+// load on a published build. The folder is created here so serving works
+// even on a fresh clone, where wwwroot does not exist yet when the API
+// first starts.
 var uploadsPath = Path.Combine(app.Environment.ContentRootPath, "wwwroot", "uploads");
 Directory.CreateDirectory(uploadsPath);
 app.UseStaticFiles(new StaticFileOptions
@@ -105,8 +108,6 @@ app.UseStaticFiles(new StaticFileOptions
     FileProvider = new PhysicalFileProvider(uploadsPath),
     RequestPath = "/uploads"
 });
-
-}
 
 app.UseCors("Client");
 app.UseAuthentication();

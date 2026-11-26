@@ -71,11 +71,11 @@ export class TenantsPage {
   load() {
     this.tenantService.getAll().subscribe({
       next: t => this.tenants.set(t),
-      error: () => this.error.set('Hindi ma-load ang tenants. Tumatakbo ba ang API?')
+      error: () => this.error.set('Could not load the tenants. Is the API running?')
     });
     this.roomService.getAll().subscribe({
       next: r => this.rooms.set(r),
-      error: () => this.error.set('Hindi ma-load ang rooms. Tumatakbo ba ang API?')
+      error: () => this.error.set('Could not load the rooms. Is the API running?')
     });
   }
 
@@ -111,7 +111,7 @@ onEscape() {
     const done = {
       next: () => {
         this.onCancel();
-        this.load();   // para updated din ang status ng rooms
+        this.load();   // so the room status updates too
       },
       error: (err: HttpErrorResponse) => this.error.set(this.messageFrom(err))
     };
@@ -124,7 +124,7 @@ onEscape() {
   }
 
   onMoveOut(id: number) {
-    if (!confirm('Mag-move out na ba ang tenant na ito?')) return;
+    if (!confirm('Is this tenant moving out?')) return;
     this.tenantService.moveOut(id).subscribe(() => this.load());
   }
 
@@ -134,6 +134,6 @@ onEscape() {
   private messageFrom(err: HttpErrorResponse): string {
     return err.status >= 400 && err.status < 500 && typeof err.error === 'string' && err.error
       ? err.error
-      : 'May error. Subukan ulit.';
+      : 'Something went wrong. Please try again.';
   }
 }

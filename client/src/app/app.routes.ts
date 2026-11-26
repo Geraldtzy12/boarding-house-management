@@ -16,5 +16,7 @@ export const routes: Routes = [
   { path: 'tenants', component: TenantsPage, canActivate: [authGuard] },
   { path: 'bills', component: BillsPage, canActivate: [authGuard] },
   { path: 'settings', component: SettingsPage, canActivate: [authGuard] },
-  { path: 'recycle-bin', component: RecycleBinPage, canActivate: [authGuard] }
+  { path: 'recycle-bin', component: RecycleBinPage, canActivate: [authGuard] },
+  // Unknown address (e.g. /abc): go to the Dashboard instead of an empty page.
+  { path: '**', redirectTo: '/dashboard' }
 ];

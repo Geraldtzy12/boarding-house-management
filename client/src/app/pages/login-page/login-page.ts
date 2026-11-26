@@ -36,7 +36,7 @@ export class LoginPage {
   forgotBusy = signal(false);
 
   constructor() {
-    if (this.auth.loggedIn()) this.router.navigate(['/rooms']);
+    if (this.auth.loggedIn()) this.router.navigate(['/dashboard']);
   }
 
   togglePasswordVisibility() {
@@ -54,7 +54,7 @@ export class LoginPage {
     this.auth.login(this.username.trim(), this.password).subscribe({
       next: () => {
         this.realtime.start();
-        this.router.navigate(['/rooms']);
+        this.router.navigate(['/dashboard']);
       },
       error: (err: HttpErrorResponse) => {
         this.busy.set(false);

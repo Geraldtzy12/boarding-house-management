@@ -252,7 +252,9 @@ export class BillsPage implements OnInit, AfterViewInit, OnDestroy {
     // No month picker on the page anymore: Generate always bills the current month.
     this.billService.generate(currentMonth()).subscribe({
       next: r => {
-        this.notification.success(`${r.created} new rent bills for ${r.month}.`);
+        this.notification.success(r.created === 1
+          ? `1 new rent bill for ${r.month}.`
+          : `${r.created} new rent bills for ${r.month}.`);
         this.load();
       },
       error: (err: HttpErrorResponse) => this.error.set(this.messageFrom(err))
