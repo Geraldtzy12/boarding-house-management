@@ -152,6 +152,55 @@ describe('BillsPage', () => {
     expect(groups[0].bills.map(b => b.id)).toEqual([1, 2]);
   });
 
+  it('should list the paid months newest first for the History month filter', () => {
+    loadBills([
+      makeBill({ id: 1, status: 'Paid', paidOn: '2026-11-05', month: '2026-11' }),
+      makeBill({ id: 2, status: 'Paid', paidOn: '2026-10-03', month: '2026-10' }),
+      makeBill({ id: 3, status: 'Paid', paidOn: '2026-09-02', month: '2026-09' }),
+      makeBill({ id: 4, status: 'Pending', month: '2026-11' }),
+    ]);
+
+    expect(component.paidMonths()).toEqual([
+      { month: '2026-11', label: 'November 2026' },
+      { month: '2026-10', label: 'October 2026' },
+      { month: '2026-09', label: 'September 2026' },
+    ]);
+  });
+
+  it('should show only the chosen month in History when the month filter is set', () => {
+    loadBills([
+      makeBill({ id: 1, status: 'Paid', paidOn: '2026-11-05', month: '2026-11' }),
+      makeBill({ id: 2, status: 'Paid', paidOn: '2026-11-06', month: '2026-11', type: 'Electricity', amount: 850 }),
+      makeBill({ id: 3, status: 'Paid', paidOn: '2026-10-03', month: '2026-10' }),
+    ]);
+
+    expect(component.filteredPaidByMonth().map(g => g.month)).toEqual(['2026-11', '2026-10']);
+
+    component.monthFilter.set('2026-10');
+    expect(component.filteredPaidByMonth().map(g => g.month)).toEqual(['2026-10']);
+    expect(component.filteredPaidByMonth()[0].bills.map(b => b.id)).toEqual([3]);
+
+    component.monthFilter.set('All');
+    expect(component.filteredPaidByMonth().map(g => g.month)).toEqual(['2026-11', '2026-10']);
+  });
+
+  it('should show the month filter only in the History view', () => {
+    loadBills([
+      makeBill({ id: 1, status: 'Paid', paidOn: '2026-11-05', month: '2026-11' }),
+    ]);
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    component.view.set('history');
+    fixture.detectChanges();
+    const monthSelect = compiled.querySelector('select[aria-label="Filter by month"]') as HTMLSelectElement;
+    expect(monthSelect).toBeTruthy();
+    expect(Array.from(monthSelect.options).map(o => o.text)).toEqual(['All months', 'November 2026']);
+
+    component.view.set('collect');
+    fixture.detectChanges();
+    expect(compiled.querySelector('select[aria-label="Filter by month"]')).toBeNull();
+  });
+
   // The search stream is debounced (250 ms), so these tests wait in real time.
   const wait = (ms: number) => new Promise<void>(r => setTimeout(r, ms));
 

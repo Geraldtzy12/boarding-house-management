@@ -40,6 +40,14 @@
       <option [value]="t">{{ t === 'All' ? 'All types' : t }}</option>
     }
   </select>
+  @if (view() === 'history') {
+    <select [value]="monthFilter()" (change)="onMonthChange($event)" aria-label="Filter by month">
+      <option value="All">All months</option>
+      @for (m of paidMonths(); track m.month) {
+        <option [value]="m.month">{{ m.label }}</option>
+      }
+    </select>
+  }
   @if (view() === 'collect') {
     <select [value]="filter()" (change)="onStatusChange($event)" aria-label="Filter by status">
       @for (f of filters; track f) {
@@ -85,7 +93,7 @@
     </table>
   </div>
 } @else {
-  @for (g of paidByMonth(); track g.month) {
+  @for (g of filteredPaidByMonth(); track g.month) {
     <h3>{{ g.label }} · {{ g.bills.length }} {{ g.bills.length === 1 ? 'bill' : 'bills' }} · {{ g.total | currency:'PHP' }} collected</h3>
     <div class="table-wrap">
       <table class="bills-table">
@@ -117,7 +125,11 @@
       </table>
     </div>
   } @empty {
-    <p>No paid bills yet.</p>
+    @if (monthFilter() !== 'All' || typeFilter() !== 'All' || search() !== '') {
+      <p>No paid bills match the current filters.</p>
+    } @else {
+      <p>No paid bills yet.</p>
+    }
   }
 }
 

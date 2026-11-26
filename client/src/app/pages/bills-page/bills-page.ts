@@ -76,6 +76,8 @@ export class BillsPage implements OnInit, AfterViewInit, OnDestroy {
   ), { initialValue: [] as Room[] });
   filter = signal<'All' | BillStatus>('All');
   typeFilter = signal<'All' | BillType>('All');
+  // History month filter: 'All' shows every month, otherwise one 'yyyy-MM' month.
+  monthFilter = signal<string>('All');
   // Keystrokes become a STREAM; operators shape it before the list reads it
   // (Week 5: Subject + debounceTime + distinctUntilChanged, exposed as a signal).
   private searchTerms$ = new Subject<string>();
@@ -146,6 +148,23 @@ export class BillsPage implements OnInit, AfterViewInit, OnDestroy {
       group.total += bill.amount;
     }
     return groups;
+  });
+
+  // Months that have paid bills, newest first — the History month filter
+  // options. This ignores the type/search filters, so the options never
+  // disappear while the user is typing.
+  paidMonths = computed(() => {
+    const months = new Set(this.bills().filter(b => b.status === 'Paid').map(b => b.month));
+    return [...months].sort((a, b) => b.localeCompare(a))
+      .map(m => ({ month: m, label: monthLabel(m) }));
+  });
+
+  // History: paid bills, grouped by month, filtered to the chosen month.
+  filteredPaidByMonth = computed(() => {
+    const month = this.monthFilter();
+    return month === 'All'
+      ? this.paidByMonth()
+      : this.paidByMonth().filter(g => g.month === month);
   });
 
   overdueCount = computed(() => this.bills().filter(b => b.status === 'Overdue').length);
@@ -351,6 +370,10 @@ export class BillsPage implements OnInit, AfterViewInit, OnDestroy {
 
   onStatusChange(event: Event) {
     this.filter.set((event.target as HTMLSelectElement).value as 'All' | BillStatus);
+  }
+
+  onMonthChange(event: Event) {
+    this.monthFilter.set((event.target as HTMLSelectElement).value);
   }
 
   // '2026-11-05' -> 'Nov 5, 2026'
