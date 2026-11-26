@@ -20,12 +20,17 @@ export class App {
   menuOpen = signal(false);
   pendingLogout = signal(false);
   pageTitle = signal('Dashboard');
+  // The admin profile in the topbar only shows on the Dashboard page.
+  isDashboard = signal(true);
 
   constructor() {
     // The topbar shows the current page's title; update it on navigation.
     this.pageTitle.set(this.titleFor(this.router.url));
+    this.isDashboard.set(this.titleFor(this.router.url) === 'Dashboard');
     this.router.events.pipe(filter(e => e instanceof NavigationEnd)).subscribe(e => {
       this.pageTitle.set(this.titleFor(e.urlAfterRedirects));
+      this.isDashboard.set(this.titleFor(e.urlAfterRedirects) === 'Dashboard');
+      this.closeMenu();
     });
 
     // Already logged in (page reload): open the real-time connection.

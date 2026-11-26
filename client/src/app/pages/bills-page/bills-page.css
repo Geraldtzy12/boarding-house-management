@@ -1,6 +1,11 @@
 /* Option A: table layout for Bills. */
 
 /* One black button only in the header — Generate is white. */
+/* The title now lives in the topbar, so the buttons stay on the right. */
+.toolbar .generate {
+  margin-left: auto;
+}
+
 .generate button.secondary {
   background: #fff;
   color: var(--text);

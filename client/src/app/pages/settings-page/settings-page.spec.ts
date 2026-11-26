@@ -66,11 +66,6 @@ describe('SettingsPage', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should show the Settings heading', () => {
-    const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('h2')?.textContent).toContain('Settings');
-  });
-
   it('should show an error when the new passwords do not match', () => {
     component.currentPassword = 'oldpass';
     component.newPassword = 'newpass123';

@@ -66,7 +66,7 @@ describe('RecycleBinPage', () => {
   it('should list deleted bills in the Recycle Bin', () => {
     expect(component.deletedBills().map(b => b.id)).toEqual([9]);
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.textContent).toContain('Recycle Bin');
+    expect(compiled.textContent).toContain('Deleted bills');
     expect(compiled.textContent).toContain('Daddy Tads');
   });
 

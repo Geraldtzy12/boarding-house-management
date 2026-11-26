@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 import { App } from './app';
 import { RealtimeService } from './services/realtime.service';
 
@@ -17,7 +17,11 @@ describe('App', () => {
     await TestBed.configureTestingModule({
       imports: [App],
       providers: [
-        provideRouter([{ path: 'login', component: DummyComponent }]),
+        provideRouter([
+          { path: 'login', component: DummyComponent },
+          { path: 'dashboard', component: DummyComponent },
+          { path: 'rooms', component: DummyComponent },
+        ]),
         // The app opens the real-time connection when logged in; the fake
         // keeps the tests from touching a real SignalR hub.
         { provide: RealtimeService, useValue: { start: () => {}, stop: () => {} } },
@@ -56,6 +60,29 @@ describe('App', () => {
     expect(links).toContain('Bills');
     // Settings lives in the account menu now, not in the sidebar itself.
     expect(links).not.toContain('Settings');
+  });
+
+  it('should show the admin chip only on the dashboard', async () => {
+    const fixture = TestBed.createComponent(App);
+    const router = TestBed.inject(Router);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    // The app starts on the dashboard, so the chip shows.
+    let compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('.user-chip')).toBeTruthy();
+
+    await router.navigateByUrl('/rooms');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('.user-chip')).toBeNull();
+
+    await router.navigateByUrl('/dashboard');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('.user-chip')).toBeTruthy();
   });
 
   it('should open the account menu when the admin chip is clicked', async () => {
