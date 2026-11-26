@@ -62,6 +62,17 @@ public class BillsController : ControllerBase
         if (exists)
             return Conflict($"{tenant.Name} already has a {request.Type} bill for {request.Month}.");
 
+        // A bill of the same type/month that was deleted still owns that
+        // month: it sits in the Recycle Bin with its payment history. Letting
+        // a new bill through here would bill the tenant twice for one month
+        // (e.g. a paid November rent bill, deleted, then added again as a
+        // fresh Pending bill). Restore it — or delete it forever first.
+        var deleted = await _db.Bills.AnyAsync(b =>
+            b.IsDeleted && b.TenantId == request.TenantId && b.Month == request.Month && b.Type == request.Type);
+
+        if (deleted)
+            return Conflict($"{tenant.Name} already has a {request.Type} bill for {request.Month} in the Recycle Bin. Restore it, or delete it forever first.");
+
         var bill = new Bill
         {
             TenantId = tenant.Id,
@@ -107,6 +118,13 @@ public class BillsController : ControllerBase
         if (duplicate)
             return Conflict($"{bill.Tenant?.Name ?? "This tenant"} already has a {request.Type} bill for {request.Month}.");
 
+        // Same rule as Create: a deleted bill still owns its month, so
+        // editing another bill into that month/type is blocked too.
+        var deletedDuplicate = await _db.Bills.AnyAsync(b =>
+            b.IsDeleted && b.TenantId == bill.TenantId && b.Month == request.Month && b.Type == request.Type);
+        if (deletedDuplicate)
+            return Conflict($"{bill.Tenant?.Name ?? "This tenant"} already has a {request.Type} bill for {request.Month} in the Recycle Bin. Restore it, or delete it forever first.");
+
         bill.Type = request.Type;
         bill.Month = request.Month;
         bill.Amount = request.Amount;
@@ -141,8 +159,11 @@ public class BillsController : ControllerBase
             .Where(t => t.IsActive && t.RoomId != null)
             .ToListAsync();
 
+        // A rent bill for the month blocks a new one — active or deleted.
+        // A deleted bill still owns its month (see Create): skipping the
+        // tenant here stops Generate from billing the same month twice.
         var alreadyBilled = await _db.Bills
-            .Where(b => !b.IsDeleted && b.Month == monthKey && b.Type == BillType.Rent)
+            .Where(b => b.Month == monthKey && b.Type == BillType.Rent)
             .Select(b => b.TenantId)
             .ToListAsync();
 

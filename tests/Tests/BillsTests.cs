@@ -135,21 +135,28 @@ public class BillsTests : ApiTestBase
     }
 
     [Fact]
-    public async Task Restore_after_recreate_is_blocked_with_409()
+    public async Task Recreate_after_delete_is_blocked_with_409()
     {
         await AuthorizeAsync();
         var tenantId = await SetupTenantAsync();
         var billId = await CreateBillAsync(tenantId, "Electricity", "2026-11", 850, "2026-11-15");
         await DeleteAsync($"/api/bills/{billId}");
-        await CreateBillAsync(tenantId, "Electricity", "2026-11", 900, "2026-11-15");
 
-        var (status, body) = await PostJsonAsync($"/api/bills/{billId}/restore", new { });
+        // A new bill for the same tenant, type and month is blocked: the
+        // deleted bill still owns that month, so it must be restored (or
+        // deleted forever) first — otherwise the tenant could be billed
+        // twice for one month, even after already paying.
+        var (status, body) = await PostJsonAsync("/api/bills",
+            new { tenantId, type = "Electricity", month = "2026-11", amount = 900, dueDate = "2026-11-15", note = (string?)null });
         Assert.Equal(HttpStatusCode.Conflict, status);
         Assert.Contains("already has a Electricity bill for 2026-11", body);
 
-        // The old bill stays in the Recycle Bin.
+        // The old bill stays in the Recycle Bin, and restoring it still works.
         var (_, deletedBody) = await GetAsync("/api/bills/deleted");
         Assert.Contains(BillIds(deletedBody), id => id == billId);
+
+        var (restoreStatus, _) = await PostJsonAsync($"/api/bills/{billId}/restore", new { });
+        Assert.Equal(HttpStatusCode.NoContent, restoreStatus);
     }
 
     [Fact]
@@ -168,20 +175,22 @@ public class BillsTests : ApiTestBase
     }
 
     [Fact]
-    public async Task Recreate_after_delete_is_allowed()
+    public async Task Recreate_after_delete_forever_is_allowed()
     {
         await AuthorizeAsync();
         var tenantId = await SetupTenantAsync();
         var billId = await CreateBillAsync(tenantId, "Electricity", "2026-11", 850, "2026-11-15");
         await DeleteAsync($"/api/bills/{billId}");
+        await DeleteAsync($"/api/bills/{billId}/permanent");
 
+        // Once the deleted bill is gone for good, the month is free again.
         var (status, _) = await PostJsonAsync("/api/bills",
             new { tenantId, type = "Electricity", month = "2026-11", amount = 900, dueDate = "2026-11-15", note = (string?)null });
         Assert.Equal(HttpStatusCode.OK, status);
     }
 
     [Fact]
-    public async Task Generate_after_delete_recreates_the_rent_bill()
+    public async Task Generate_after_delete_creates_nothing_new()
     {
         await AuthorizeAsync();
         await SetupTenantAsync();
@@ -194,9 +203,11 @@ public class BillsTests : ApiTestBase
         var billId = JsonDocument.Parse(billsBody).RootElement[0].GetProperty("id").GetInt32();
         await DeleteAsync($"/api/bills/{billId}");
 
+        // The deleted rent bill still owns the month: Generate skips the
+        // tenant instead of billing the same month twice.
         var (status, second) = await PostJsonAsync($"/api/bills/generate?month={month}", new { });
         Assert.Equal(HttpStatusCode.OK, status);
-        Assert.Equal(1, JsonDocument.Parse(second).RootElement.GetProperty("created").GetInt32());
+        Assert.Equal(0, JsonDocument.Parse(second).RootElement.GetProperty("created").GetInt32());
     }
 
     [Fact]
