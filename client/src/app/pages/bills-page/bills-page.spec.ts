@@ -296,6 +296,17 @@ describe('BillsPage', () => {
     expect(paid.classList.contains('paid')).toBe(true);
   });
 
+  it('should show the bill note under the tenant name', () => {
+    loadBills([
+      makeBill({ id: 1, note: 'Meter 1200 to 1285', tenant: { id: 1, name: 'Gerald Bonalos', contact: '09170000001', roomId: 1, leaseStart: '2026-11-01', isActive: true } }),
+      makeBill({ id: 2, note: null }),
+    ]);
+    fixture.detectChanges();
+    const notes = Array.from(fixture.nativeElement.querySelectorAll('.note')) as HTMLElement[];
+    expect(notes.length).toBe(1);
+    expect(notes[0].textContent?.trim()).toBe('Meter 1200 to 1285');
+  });
+
   it('should hide the page error banner while the form is open (error shows inside the modal instead)', async () => {
     component.error.set('Gerald Bonalos already has a Water bill for 2026-11.');
     component.showForm.set(true);

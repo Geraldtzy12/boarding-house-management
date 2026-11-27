@@ -66,7 +66,11 @@
       <tbody>
         @for (b of filtered(); track b.id) {
           <tr>
-            <td [title]="b.note ?? ''">{{ b.tenant?.name ?? '—' }}</td>
+            <td [title]="b.note ?? ''">{{ b.tenant?.name ?? '—' }}
+              @if (b.note) {
+                <div class="note">{{ b.note }}</div>
+              }
+            </td>
             <td>{{ b.roomNo }}</td>
             <td>{{ b.type }}</td>
             <td>{{ b.amount | currency:'PHP' }}</td>
@@ -103,7 +107,11 @@
         <tbody>
           @for (b of g.bills; track b.id) {
             <tr>
-              <td [title]="b.note ?? ''">{{ b.tenant?.name ?? '—' }}</td>
+              <td [title]="b.note ?? ''">{{ b.tenant?.name ?? '—' }}
+                @if (b.note) {
+                  <div class="note">{{ b.note }}</div>
+                }
+              </td>
               <td>{{ b.roomNo }}</td>
               <td>{{ b.type }}</td>
               <td>{{ b.amount | currency:'PHP' }}</td>

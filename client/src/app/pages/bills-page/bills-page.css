@@ -109,3 +109,10 @@
 .row-actions button.secondary:hover:not(:disabled) {
   background: #f8fafc;
 }
+
+/* The bill note, shown under the tenant name. */
+.bills-table td .note {
+  font-size: .85rem;
+  color: var(--muted);
+  white-space: normal;
+}
