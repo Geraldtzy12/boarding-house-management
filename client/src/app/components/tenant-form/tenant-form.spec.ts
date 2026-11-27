@@ -87,16 +87,20 @@ describe('TenantForm', () => {
     expect(component.contact()).toBe('0921302133');
   });
 
-  it('should show an error when the contact number is not 11 digits', () => {
-    component.onContactChanged('091700000');
-    expect(component.contactError()).toBe('Contact number must be 11 digits.');
+  it('should show an error when the contact number is not 10 digits starting with 9', () => {
+    component.onContactChanged('91700000');
+    expect(component.contactError()).toBe('Contact number must be 10 digits starting with 9.');
     expect(component.canSave()).toBe(false);
 
-    component.onContactChanged('0917000000111');
-    expect(component.contactError()).toBe('Contact number must be 11 digits.');
+    component.onContactChanged('91700000111');
+    expect(component.contactError()).toBe('Contact number must be 10 digits starting with 9.');
     expect(component.canSave()).toBe(false);
 
-    component.onContactChanged('09170000001');
+    component.onContactChanged('2170000001');
+    expect(component.contactError()).toBe('Contact number must be 10 digits starting with 9.');
+    expect(component.canSave()).toBe(false);
+
+    component.onContactChanged('9170000001');
     expect(component.contactError()).toBe('');
   });
 
@@ -109,20 +113,50 @@ describe('TenantForm', () => {
     expect(cancelled).toBe(true);
   });
 
-  it('should only allow saving with an 11-digit contact number', () => {
+  it('should only allow saving with a 10-digit contact number starting with 9, stored with the 0 back', () => {
     let draft: { contact: string } | undefined;
     component.saved.subscribe(d => draft = d);
     component.name.set('Juan Dela Cruz');
     component.leaseStart.set('2026-11-01');
 
-    component.onContactChanged('091700000');
+    component.onContactChanged('91700000');
     component.submit();
     expect(draft).toBeUndefined();
 
-    component.onContactChanged('09170000001');
+    component.onContactChanged('9170000001');
     expect(component.canSave()).toBe(true);
     component.submit();
     expect(draft?.contact).toBe('09170000001');
+  });
+
+  it('should show an error when the name contains numbers or symbols', () => {
+    component.name.set('1233123123');
+    component.nameTouched.set(true);
+    expect(component.nameError()).toBe('Name must contain letters only.');
+    expect(component.canSave()).toBe(false);
+
+    component.name.set('Kim123');
+    expect(component.nameError()).toBe('Name must contain letters only.');
+
+    component.name.set('Angelica Kudera )*sqndjsd');
+    expect(component.nameError()).toBe('Name must contain letters only.');
+    expect(component.canSave()).toBe(false);
+
+    component.name.set('Anne-Marie');
+    expect(component.nameError()).toBe('');
+
+    component.name.set('Juan Dela Cruz');
+    expect(component.nameError()).toBe('');
+  });
+
+  it('should show the stored number without the 0 when editing', () => {
+    fixture.componentRef.setInput('tenant', {
+      id: 1, name: 'Juan Dela Cruz', contact: '09170000001',
+      roomId: 1, leaseStart: '2026-10-01', isActive: true,
+    });
+    fixture.detectChanges();
+    expect(component.contact()).toBe('9170000001');
+    expect(component.canSave()).toBe(true);
   });
 
   it('should focus the Name field when the form opens', () => {
@@ -138,13 +172,13 @@ describe('TenantForm', () => {
   });
 
   it('should show the contact error only after leaving a short number', () => {
-    component.onContactChanged('091700000');
+    component.onContactChanged('91700000');
     fixture.detectChanges();
     // The error is computed, but it stays hidden until the field is left.
-    expect(fixture.nativeElement.textContent).not.toContain('Contact number must be 11 digits.');
+    expect(fixture.nativeElement.textContent).not.toContain('Contact number must be 10 digits starting with 9.');
     const input = fixture.nativeElement.querySelector('input[name="contact"]') as HTMLInputElement;
     input.dispatchEvent(new Event('blur'));
     fixture.detectChanges();
-    expect(fixture.nativeElement.textContent).toContain('Contact number must be 11 digits.');
+    expect(fixture.nativeElement.textContent).toContain('Contact number must be 10 digits starting with 9.');
   });
 });

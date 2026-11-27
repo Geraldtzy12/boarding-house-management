@@ -55,13 +55,22 @@ export class TenantForm implements AfterViewInit {
     return r ? this.isRoomFull(r) : false;
   });
 
-  // Contact is digits only (09XXXXXXXXX, 11 digits); the +63 is just shown on the field.
+  // What the user types after the +63 prefix: 10 digits starting with 9
+  // (9309004530). The +63 stands for the 0, so the 0 is added back on save
+  // and the stored number stays the 11-digit 09XXXXXXXXX the API expects.
   contactDigits = computed(() => this.contact().replace(/\D/g, ''));
+
+  // 10 digits starting with 9 — anything else (too short, too long, or not
+  // starting with 9, like 21312312312) is an error.
+  contactValid = computed(() => {
+    const digits = this.contactDigits();
+    return digits.length === 10 && digits.startsWith('9');
+  });
 
   contactError = computed(() => {
     const digits = this.contactDigits();
-    if (digits.length === 0 || digits.length === 11) return '';
-    return 'Contact number must be 11 digits.';
+    if (digits.length === 0 || this.contactValid()) return '';
+    return 'Contact number must be 10 digits starting with 9.';
   });
 
   // Blur validation (Week 3: focus/blur): errors show only after the user
@@ -70,16 +79,29 @@ export class TenantForm implements AfterViewInit {
   nameTouched = signal(false);
   contactTouched = signal(false);
 
-  nameError = computed(() =>
-    this.nameTouched() && this.name().trim().length === 0 ? 'Name is required.' : '');
+  // The name is letters only: letters, spaces, hyphens and apostrophes
+  // ("Juan Dela Cruz", "Anne-Marie", "D'Angelo"). Numbers and symbols
+  // ("1233123123", "Kim123", "Angelica )*") are not allowed.
+  nameValid = computed(() => {
+    const name = this.name().trim();
+    return name.length > 0 && /[A-Za-z]/.test(name) && !/[^A-Za-z '\-]/.test(name);
+  });
+
+  nameError = computed(() => {
+    if (!this.nameTouched()) return '';
+    const name = this.name().trim();
+    if (name.length === 0) return 'Name is required.';
+    if (!this.nameValid()) return 'Name must contain letters only.';
+    return '';
+  });
 
   ngAfterViewInit() {
     this.firstField()?.nativeElement.focus();
   }
 
   canSave = computed(() =>
-    this.name().trim().length > 0 &&
-    this.contactDigits().length === 11 &&
+    this.nameValid() &&
+    this.contactValid() &&
     this.leaseStart().length > 0 &&
     !this.selectedRoomFull()
   );
@@ -88,7 +110,9 @@ export class TenantForm implements AfterViewInit {
     effect(() => {
       const t = this.tenant();
       this.name.set(t?.name ?? '');
-      this.contact.set((t?.contact ?? '').replace(/\D/g, ''));
+      // Stored numbers are 09…; the form shows them without the 0,
+      // because the +63 prefix already stands for it.
+      this.contact.set((t?.contact ?? '').replace(/\D/g, '').replace(/^0/, ''));
       this.roomId.set(t?.roomId ?? null);
       this.leaseStart.set(t?.leaseStart ?? today());
       this.nameTouched.set(false);
@@ -105,7 +129,9 @@ export class TenantForm implements AfterViewInit {
     this.saved.emit({
       id: this.tenant()?.id,
       name: this.name().trim(),
-      contact: this.contactDigits(),
+      // The +63 stands for the 0: add it back so the saved number is the
+      // 11-digit 09XXXXXXXXX the API and the saved data expect.
+      contact: '0' + this.contactDigits(),
       roomId: this.roomId(),
       leaseStart: this.leaseStart()
     });

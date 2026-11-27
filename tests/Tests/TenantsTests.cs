@@ -189,4 +189,46 @@ public class TenantsTests : ApiTestBase
             new { name = "Maria", contact = "0917000000111", roomId, leaseStart = "2026-11-11", isActive = true });
         Assert.Equal(HttpStatusCode.BadRequest, longNumber);
     }
+
+    [Fact]
+    public async Task Create_tenant_with_numbers_in_the_name_returns_400()
+    {
+        await AuthorizeAsync();
+        var roomId = await CreateRoomAsync("101");
+
+        // A name of pure numbers is not a name.
+        var (allDigits, allDigitsBody) = await PostJsonAsync("/api/tenants",
+            new { name = "1233123123", contact = "09170000001", roomId, leaseStart = "2026-11-11", isActive = true });
+        Assert.Equal(HttpStatusCode.BadRequest, allDigits);
+        Assert.Contains("letters only", allDigitsBody);
+
+        var (withDigit, _) = await PostJsonAsync("/api/tenants",
+            new { name = "Kim123", contact = "09170000002", roomId, leaseStart = "2026-11-11", isActive = true });
+        Assert.Equal(HttpStatusCode.BadRequest, withDigit);
+    }
+
+    [Fact]
+    public async Task Create_tenant_with_symbols_in_the_name_returns_400()
+    {
+        await AuthorizeAsync();
+        var roomId = await CreateRoomAsync("101");
+
+        var (status, body) = await PostJsonAsync("/api/tenants",
+            new { name = "Angelica Kudera )*sqndjsd", contact = "09170000001", roomId, leaseStart = "2026-11-11", isActive = true });
+        Assert.Equal(HttpStatusCode.BadRequest, status);
+        Assert.Contains("letters only", body);
+    }
+
+    [Fact]
+    public async Task Create_tenant_with_contact_not_starting_with_09_returns_400()
+    {
+        await AuthorizeAsync();
+        var roomId = await CreateRoomAsync("101");
+
+        // 11 digits, but not a mobile number: it does not start with 09.
+        var (status, body) = await PostJsonAsync("/api/tenants",
+            new { name = "Maria", contact = "21312312312", roomId, leaseStart = "2026-11-11", isActive = true });
+        Assert.Equal(HttpStatusCode.BadRequest, status);
+        Assert.Contains("must start with 09", body);
+    }
 }

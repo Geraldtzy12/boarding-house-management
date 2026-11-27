@@ -88,6 +88,10 @@ public class TenantsController : ControllerBase
     }
 
     // (Status, Message) if there is a problem, null if OK.
+    // Name = letters only (no numbers or symbols: "1233123123", "Kim123"
+    // and "Angelica )*" are not names); contact = 11 digits starting with 09
+    // (the form types 10 digits after the +63 prefix and adds the 0 back
+    // before sending).
     // Duplicate = another active tenant with the same name (case-insensitive,
     // "ANgel" and "angel" are the same person) OR the same contact number
     // ("0921-302-133" and "0921302133" are the same number).
@@ -100,7 +104,14 @@ public class TenantsController : ControllerBase
 
         if (name.Length == 0) return (400, "Enter a name for the tenant.");
         if (contact.Length == 0) return (400, "Enter a contact number for the tenant.");
+        // Letters, spaces, hyphens and apostrophes only ("Juan Dela Cruz",
+        // "Anne-Marie", "D'Angelo"). Numbers and symbols ("1233123123",
+        // "Kim123", "Angelica )*") are not names.
+        if (!name.Any(char.IsLetter) || name.Any(c => !(char.IsLetter(c) || c == ' ' || c == '-' || c == '\'')))
+            return (400, "Name must contain letters only.");
         if (contact.Length != 11) return (400, "Contact number must be 11 digits.");
+        if (!contact.StartsWith("09"))
+            return (400, "Contact number must start with 09.");
 
         var activeTenants = await _db.Tenants
             .Where(t => t.IsActive && (tenantId == null || t.Id != tenantId))
