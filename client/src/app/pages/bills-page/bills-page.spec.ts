@@ -307,6 +307,17 @@ describe('BillsPage', () => {
     expect(notes[0].textContent?.trim()).toBe('Meter 1200 to 1285');
   });
 
+  it('should give each summary card its own top-accent color', () => {
+    loadBills([]);
+    fixture.detectChanges();
+    const stats = Array.from(fixture.nativeElement.querySelectorAll('.summary .stat')) as HTMLElement[];
+    expect(stats.length).toBe(4);
+    expect(stats[0].classList.contains('stat-red')).toBe(true);
+    expect(stats[1].classList.contains('stat-red')).toBe(true);
+    expect(stats[2].classList.contains('stat-amber')).toBe(true);
+    expect(stats[3].classList.contains('stat-green')).toBe(true);
+  });
+
   it('should hide the page error banner while the form is open (error shows inside the modal instead)', async () => {
     component.error.set('Gerald Bonalos already has a Water bill for 2026-11.');
     component.showForm.set(true);

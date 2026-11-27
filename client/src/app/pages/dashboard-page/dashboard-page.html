@@ -29,24 +29,24 @@
   </div>
 
   <div class="summary">
-    <div class="stat">
+    <div class="stat stat-green">
       <span>Collected this month</span>
       <strong>{{ s.collectedThisMonth | currency:'PHP':'symbol':'1.0-0' }}</strong>
     </div>
-    <div class="stat">
+    <div class="stat stat-amber">
       <span>To collect</span>
       <strong>{{ s.toCollect | currency:'PHP':'symbol':'1.0-0' }}</strong>
     </div>
-    <div class="stat" [class.stat-overdue-alert]="s.overdueCount > 0">
+    <div class="stat stat-red" [class.stat-overdue-alert]="s.overdueCount > 0">
       <span>Overdue</span>
       <strong>{{ s.overdueCount }} bills · {{ s.overdueAmount | currency:'PHP':'symbol':'1.0-0' }}</strong>
     </div>
-    <div class="stat">
+    <div class="stat stat-indigo">
       <span>Rooms</span>
       <strong>{{ s.occupiedRooms }} / {{ s.totalRooms }} occupied</strong>
       <div class="progress"><div class="fill" [style.width.%]="occupancyPercent(s)"></div></div>
     </div>
-    <div class="stat">
+    <div class="stat stat-sky">
       <span>Active tenants</span>
       <strong>{{ s.activeTenants }}</strong>
     </div>

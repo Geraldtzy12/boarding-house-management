@@ -83,6 +83,19 @@ describe('DashboardPage', () => {
     expect(component.summary()?.vacantRoomList[0].roomNo).toBe('105');
   });
 
+  it('should give each stat card its own color class', () => {
+    mockSummary = makeSummary();
+    component.load();
+    fixture.detectChanges();
+    const stats = Array.from(fixture.nativeElement.querySelectorAll('.summary .stat')) as HTMLElement[];
+    expect(stats.length).toBe(5);
+    expect(stats[0].classList.contains('stat-green')).toBe(true);
+    expect(stats[1].classList.contains('stat-amber')).toBe(true);
+    expect(stats[2].classList.contains('stat-red')).toBe(true);
+    expect(stats[3].classList.contains('stat-indigo')).toBe(true);
+    expect(stats[4].classList.contains('stat-sky')).toBe(true);
+  });
+
   it('should show the current month', () => {
     const label = new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' });
     expect(component.monthLabel()).toBe(label);

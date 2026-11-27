@@ -98,6 +98,13 @@
   color: var(--danger);
 }
 
+/* Stat cards: one color per card — a colored top bar. */
+.stat-green { border-top: 4px solid #16a34a; }
+.stat-amber { border-top: 4px solid #d97706; }
+.stat-red { border-top: 4px solid #dc2626; }
+.stat-indigo { border-top: 4px solid #4f46e5; }
+.stat-sky { border-top: 4px solid #0284c7; }
+
 /* Lists: each card sizes to its own content instead of stretching to the tallest. */
 .grid {
   align-items: start;

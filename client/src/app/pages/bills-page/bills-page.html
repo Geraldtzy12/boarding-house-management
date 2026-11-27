@@ -21,10 +21,10 @@
 }
 
 <div class="summary">
-  <div class="stat"><span>Overdue</span><strong>{{ overdueCount() }}</strong></div>
-  <div class="stat"><span>Overdue total</span><strong>{{ overdueTotal() | currency:'PHP' }}</strong></div>
-  <div class="stat"><span>Pending</span><strong>{{ pendingCount() }}</strong></div>
-  <div class="stat"><span>Paid</span><strong>{{ paidCount() }}</strong></div>
+  <div class="stat stat-red"><span>Overdue</span><strong>{{ overdueCount() }}</strong></div>
+  <div class="stat stat-red"><span>Overdue total</span><strong>{{ overdueTotal() | currency:'PHP' }}</strong></div>
+  <div class="stat stat-amber"><span>Pending</span><strong>{{ pendingCount() }}</strong></div>
+  <div class="stat stat-green"><span>Paid</span><strong>{{ paidCount() }}</strong></div>
 </div>
 
 <div class="filters">
